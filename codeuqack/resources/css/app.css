@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+    scroll-behavior: smooth;
+      margin: 0;
+  padding: 0;
+
+  overflow-x: hidden;
+}
+
+body {
+    background: linear-gradient(135deg, #fffd9e 0%,  #fffd7f 100%);
+       margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+button,
+a.button-primary {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+button:hover,
+a.button-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+
+header {
+    backdrop-filter: blur(12px);
+    background-color: rgba(255, 255, 255, 0.7);
+}
+
+footer {
+    color: #4b5563; 
+}
+h1{
+    font-weight: 600;
+}
+
+
