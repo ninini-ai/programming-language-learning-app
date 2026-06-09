@@ -31,7 +31,7 @@ userNameEl.textContent = data.name || user.email;
   // -------------------
   progressArea.innerHTML = "";
 
- for (let course in data.progress) {
+for (let course in data.progress) {
   const courseData = data.progress[course] || {
     lessonsCompleted: [],
     quizzesCompleted: []
@@ -45,31 +45,32 @@ userNameEl.textContent = data.name || user.email;
   const percent = Math.floor((done / totalItems) * 100);
 
   progressArea.innerHTML += `
-    <div class="mb-3">
-      <p class="font-semibold">${course.toUpperCase()} - ${percent}%</p>
-      <div class="w-full bg-gray-200 h-2 rounded">
-        <div class="bg-warmOrange h-2 rounded" style="width:${percent}%"></div>
-      </div>
+    <div>
+      <p class="text-2xl font-bold text-deepChocolate">
+        ${course.toUpperCase()} - ${percent}%
+      </p>
+      <p class="font-semibold text-deepChocolate">
+        Progress
+      </p>
     </div>
   `;
 }
-
   // -------------------
   // BADGES
   // -------------------
-  badgesArea.innerHTML = "";
-
   if (!data.badges.length) {
-    badgesArea.innerHTML = "<p>No badges yet</p>";
-  } else {
-    data.badges.forEach(b => {
-      badgesArea.innerHTML += `
-        <span class="px-3 py-1 bg-yellow-100 rounded text-sm">
-          ${b}
-        </span>
-      `;
-    });
-  }
+  badgesArea.innerHTML = `
+    <span class="font-semibold">
+      No Badge
+    </span>
+  `;
+} else {
+  badgesArea.innerHTML = `
+    <span class="font-semibold">
+      ${data.badges[data.badges.length - 1]}
+    </span>
+  `;
+}
 
   // -------------------
   // HISTORY
