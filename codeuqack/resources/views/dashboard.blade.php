@@ -36,79 +36,77 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
 
         <!-- STREAK -->
-        <div class="bg-softCream rounded-3xl p-5 flex items-center gap-4 shadow-md">
+    <div class="bg-softCream rounded-xl p-4 shadow-md">
+    <div class="flex flex-col items-center text-center">
+        <img
+            src="{{ asset('images/streak.png') }}"
+            class="w-12 h-12 object-contain mb-2"
+            alt="Streak"
+        >
 
-            <!-- Replace image later -->
-            <img
-                src="{{ asset('images/streak.png') }}"
-                class="w-12 h-12 object-contain"
-                alt="Streak"
-            >
+        <p id="streak" class="text-2xl font-bold text-deepChocolate">
+            0 days
+        </p>
 
-            <div>
-                <p id="streak" class="text-3xl font-bold text-deepChocolate">
-                    0 days
-                </p>
-                <p class="font-semibold text-deepChocolate">
-                    Streak
-                </p>
-            </div>
-        </div>
+        <p class="font-semibold text-deepChocolate">
+            Streak
+        </p>
+    </div>
+</div>
 
         <!-- XP -->
-        <div class="bg-softCream rounded-3xl p-5 flex items-center gap-4 shadow-md">
+        <div class="bg-softCream rounded-3xl p-5 flex flex-col items-center text-center shadow-md">
 
-            <!-- Replace image later -->
-            <img
-                src="{{ asset('images/xp.png') }}"
-                class="w-12 h-12 object-contain"
-                alt="XP"
-            >
+    <img
+        src="{{ asset('images/xp.png') }}"
+        class="w-12 h-12 object-contain mb-2"
+        alt="XP"
+    >
 
-            <div>
-                <p id="xp" class="text-3xl font-bold text-deepChocolate">
-                    0
-                </p>
-                <p class="font-semibold text-deepChocolate">
-                    Total XP
-                </p>
-            </div>
-        </div>
+    <div>
+        <p id="xp" class="text-2xl font-bold text-deepChocolate">
+            0
+        </p>
+        <p class="font-semibold text-deepChocolate">
+            Total XP
+        </p>
+    </div>
+
+</div>
 
         <!-- BADGES -->
-        <div class="bg-softCream rounded-3xl p-5 flex items-center gap-4 shadow-md">
+        <div class="bg-softCream rounded-3xl p-5 flex flex-col items-center text-center shadow-md">
 
-            <!-- Replace image later -->
-            <img
-                src="{{ asset('images/badge.png') }}"
-                class="w-12 h-12 object-contain"
-                alt="Badge"
-            >
+    <img
+        src="{{ asset('images/bronze.png') }}"
+        class="w-12 h-12 object-contain mb-2"
+        alt="Badge"
+    >
 
-            <div>
-                <p class="text-3xl font-bold text-deepChocolate">
-                    Badge
-                </p>
+    <div>
+        <p class="text-2xl font-bold text-deepChocolate">
+            Badge
+        </p>
 
-                <div id="badgesArea" class="text-deepChocolate font-semibold">
-                </div>
-            </div>
+        <div id="badgesArea" class="text-deepChocolate font-semibold">
         </div>
+    </div>
 
+</div>
         <!-- COURSE PROGRESS -->
-        <div class="bg-softCream rounded-3xl p-5 flex items-center gap-4 shadow-md">
+       <div class="bg-softCream rounded-3xl p-5 flex flex-col items-center text-center shadow-md">
 
-            <!-- Replace image later -->
-            <img
-                src="{{ asset('images/progress.png') }}"
-                class="w-12 h-12 object-contain"
-                alt="Progress"
-            >
+    <img
+        src="{{ asset('images/percent.png') }}"
+        class="w-12 h-12 object-contain mb-2"
+        alt="Progress"
+    >
 
-            <div class="w-full">
-                <div id="progressArea"></div>
-            </div>
-        </div>
+    <div class="w-full">
+        <div id="progressArea"></div>
+    </div>
+
+</div>
 
     </div>
 

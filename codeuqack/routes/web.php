@@ -51,3 +51,25 @@ Route::get('/quiz/{course}/{quizId}', function ($course, $quizId) {
 Route::get('/leaderboard', function () {
     return view('leaderboard');
 });
+
+// quizzes
+Route::get('/quiz-data/{course}/{quizId}', function ($course, $quizId) {
+
+    $path = resource_path(
+        "data/quizzes/$course/$quizId.json"
+    );
+
+    if (!file_exists($path)) {
+        return response()->json([
+            'title' => 'Quiz Not Found',
+            'questions' => []
+        ]);
+    }
+
+    return response()->json(
+        json_decode(
+            file_get_contents($path),
+            true
+        )
+    );
+});

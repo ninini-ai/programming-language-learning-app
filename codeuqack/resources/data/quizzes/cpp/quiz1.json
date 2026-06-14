@@ -1,0 +1,29 @@
+{
+  "title": "CPP Quiz 1",
+  "questions": [
+    {
+      "question": "What is C++?",
+      "options": [
+        "Programming Language",
+        "Database",
+        "Browser",
+        "OS"
+      ],
+      "correct": 0,
+      "hint": "It is used to write software.",
+      "explanation": "C++ is a programming language."
+    },
+    {
+      "question": "Which symbol ends a statement?",
+      "options": [
+        ".",
+        ";",
+        ",",
+        ":"
+      ],
+      "correct": 1,
+      "hint": "Look at every C++ code example.",
+      "explanation": "A semicolon ends a statement."
+    }
+  ]
+}

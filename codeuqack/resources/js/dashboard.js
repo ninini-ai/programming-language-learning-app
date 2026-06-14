@@ -22,7 +22,16 @@ userNameEl.textContent = data.name || user.email;
   // -------------------
   // BASIC INFO
   // -------------------
-  xpEl.textContent = data.xp || 0;
+const cppXP =
+data.xp?.cpp || 0;
+
+const pythonXP =
+data.xp?.python || 0;
+
+xpEl.innerHTML = `
+CPP: ${cppXP}<br>
+Python: ${pythonXP}
+`;
   levelEl.textContent = data.level || 1;
   streakEl.textContent = (data.streak?.count || 0) + " days";
 
@@ -40,38 +49,81 @@ for (let course in data.progress) {
   const lessons = courseData.lessonsCompleted.length;
   const quizzes = courseData.quizzesCompleted.length;
 
-  const totalItems = 10;
+const totalLessons = 10;
+const totalQuizzes = 3;
+
+const totalItems =
+ totalLessons +
+ totalQuizzes;
   const done = lessons + quizzes;
   const percent = Math.floor((done / totalItems) * 100);
 
-  progressArea.innerHTML += `
-    <div>
-      <p class="text-2xl font-bold text-deepChocolate">
-        ${course.toUpperCase()} - ${percent}%
-      </p>
-      <p class="font-semibold text-deepChocolate">
-        Progress
-      </p>
-    </div>
-  `;
+ progressArea.innerHTML += `
+<div class="mb-3">
+
+<p class="font-bold">
+${course.toUpperCase()}
+</p>
+
+<p>
+Lessons:
+${lessons}
+</p>
+
+<p>
+Quizzes:
+${quizzes}
+</p>
+
+<p>
+Progress:
+${percent}%
+</p>
+
+</div>
+`;
 }
   // -------------------
   // BADGES
   // -------------------
-  if (!data.badges.length) {
-  badgesArea.innerHTML = `
-    <span class="font-semibold">
-      No Badge
-    </span>
-  `;
-} else {
-  badgesArea.innerHTML = `
-    <span class="font-semibold">
-      ${data.badges[data.badges.length - 1]}
-    </span>
-  `;
+const totalXP =
+ (data.xp?.cpp || 0)
+ +
+ (data.xp?.python || 0);
+
+let badgeImage =
+ "/images/bronze.png";
+
+let badgeText =
+ "Bronze";
+
+if(totalXP >= 100){
+ badgeImage =
+ "/images/silver.png";
+ badgeText =
+ "Silver";
 }
 
+if(totalXP >= 250){
+ badgeImage =
+ "/images/gold.png";
+ badgeText =
+ "Gold";
+}
+
+if(totalXP >= 500){
+ badgeImage =
+ "/images/platinum.png";
+ badgeText =
+ "Platinum";
+}
+
+document.querySelector(
+ 'img[alt="Badge"]'
+).src = badgeImage;
+
+badgesArea.innerHTML =
+ badgeText;
   // -------------------
   // HISTORY
   // -------------------

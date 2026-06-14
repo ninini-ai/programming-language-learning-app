@@ -1,0 +1,15 @@
+{
+  "lesson1": [
+    {
+      "question": "Python is:",
+      "options": [
+        "Programming Language",
+        "Database",
+        "Framework",
+        "Compiler"
+      ],
+      "correct": 0,
+      "explanation": "Python is a programming language."
+    }
+  ]
+}

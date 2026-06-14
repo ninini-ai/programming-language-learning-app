@@ -1,56 +1,67 @@
 import { db } from "./firebase";
 import {
-  collection,
-  getDocs,
-  query,
-  orderBy,
-  limit
+ collection,
+ getDocs
 } from "firebase/firestore";
 
-const container = document.getElementById("leaderboardList");
+const cppTable =
+document.getElementById("cppBoard");
 
-async function loadLeaderboard() {
-  container.innerHTML = "<p class='text-center'>Loading...</p>";
+const pythonTable =
+document.getElementById("pythonBoard");
 
-  const q = query(
-    collection(db, "users"),
-    orderBy("xp", "desc"),
-    limit(10)
-  );
+async function load(){
 
-  const snapshot = await getDocs(q);
+ const snap =
+ await getDocs(
+   collection(db,"users")
+ );
 
-  container.innerHTML = "";
+ let users=[];
 
-  let rank = 1;
+ snap.forEach(doc=>{
 
-  snapshot.forEach(doc => {
-    const user = doc.data();
+   users.push(doc.data());
 
-    let medal = "";
-    if (rank === 1) medal = "1";
-    else if (rank === 2) medal = "2";
-    else if (rank === 3) medal = "3";
+ });
 
-    container.innerHTML += `
-      <div class="flex items-center justify-between p-4 rounded-lg
-        ${rank === 1 ? "bg-yellow-100" : "bg-softCream"}">
+ const cpp =
+ [...users]
+ .sort(
+  (a,b)=>
+  (b.xp?.cpp||0)-
+  (a.xp?.cpp||0)
+ );
 
-        <div class="flex items-center gap-3">
-          <span class="text-lg font-bold w-6">${medal || "#" + rank}</span>
-          <span class="font-semibold text-deepChocolate">
-            ${user.name || user.email}
-          </span>
-        </div>
+ const python =
+ [...users]
+ .sort(
+  (a,b)=>
+  (b.xp?.python||0)-
+  (a.xp?.python||0)
+ );
 
-        <span class="font-bold text-warmOrange">
-          ${user.xp || 0} XP
-        </span>
-      </div>
-    `;
+ cpp.forEach((u,i)=>{
 
-    rank++;
-  });
+   cppTable.innerHTML += `
+   <tr>
+    <td>${i+1}</td>
+    <td>${u.name}</td>
+    <td>${u.xp?.cpp||0}</td>
+   </tr>
+   `;
+ });
+
+ python.forEach((u,i)=>{
+
+   pythonTable.innerHTML += `
+   <tr>
+    <td>${i+1}</td>
+    <td>${u.name}</td>
+    <td>${u.xp?.python||0}</td>
+   </tr>
+   `;
+ });
 }
 
-loadLeaderboard();
+load();

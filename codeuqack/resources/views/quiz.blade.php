@@ -14,7 +14,9 @@
 
   <div id="questionBox"></div>
 
-  <div id="feedback" class="mt-4 text-center font-semibold"></div>
+<div id="feedback"
+class="mt-4 text-center font-semibold">
+</div>
 
   <button id="nextBtn"
     class="mt-4 bg-warmOrange text-white px-4 py-2 rounded hidden">

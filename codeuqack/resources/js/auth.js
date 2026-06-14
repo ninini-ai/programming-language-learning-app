@@ -99,8 +99,15 @@ emailSignupBtn.onclick = async () => {
   selectedCourses: courses,
   createdAt: serverTimestamp(),
 
-  xp: 0,
-  level: 1,
+  xp:{
+  cpp:0,
+  python:0
+},
+
+level:{
+  cpp:1,
+  python:1
+},
   badges: [],
 
   streak: {

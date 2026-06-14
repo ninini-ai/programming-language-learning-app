@@ -32,7 +32,7 @@
   </div>
 </nav>
 <main class="flex flex-col items-center w-full mt-20 pb-24">
-{{-- <div class="mt-10">
+ <div class="mt-10">
   <div class="mb-6 text-center">
     <h2 class="text-2xl font-bold text-warmOrange">
       Learn Coding with Fun Games
@@ -47,7 +47,7 @@
     <div class="bg-softCream rounded-xl p-5 text-center hover:scale-105 transition">
       <i class="fa-solid fa-bug text-4xl text-warmOrange mb-3"></i>
       <h3 class="text-deepChocolate text-lg font-semibold mb-2">Bug Hunter</h3>
-      <p class="text-sm text-gray-300 mb-4">
+      <p class="text-sm text-gray-400 mb-4">
         Find and fix errors in code to become better at debugging.
       </p>
       <a href="/games/bug-hunter"
@@ -60,7 +60,7 @@
     <div class="bg-softCream rounded-xl p-5 text-center hover:scale-105 transition">
       <i class="fa-solid fa-route text-4xl text-warmOrange mb-3"></i>
       <h3 class="text-deepChocolate text-lg font-semibold mb-2">Code Maze</h3>
-      <p class="text-sm text-gray-300 mb-4">
+      <p class="text-sm text-gray-400 mb-4">
         Guide your code through a maze using the correct logic steps.
       </p>
       <a href="/games/code-maze"
@@ -73,7 +73,7 @@
     <div class="bg-softCream rounded-xl p-5 text-center hover:scale-105 transition">
       <i class="fa-solid fa-code text-4xl text-warmOrange mb-3"></i>
       <h3 class="text-deepChocolate text-lg font-semibold mb-2">Code Sorter</h3>
-      <p class="text-sm text-gray-300 mb-4">
+      <p class="text-sm text-gray-400 mb-4">
         Arrange code blocks in the correct order to make the program work.
       </p>
       <a href="/games/code-sorter"
@@ -86,7 +86,7 @@
     <div class="bg-softCream rounded-xl p-5 text-center hover:scale-105 transition">
       <i class="fa-solid fa-bucket text-4xl text-warmOrange mb-3"></i>
       <h3 class="text-deepChocolate text-lg font-semibold mb-2">Bucket Game</h3>
-      <p class="text-sm text-gray-300 mb-4">
+      <p class="text-sm text-gray-400 mb-4">
         Place values into the correct buckets to understand variables.
       </p>
       <a href="/games/bucket-game"
@@ -96,16 +96,8 @@
     </div>
 
   </div>
-</div> --}}
+</div> 
 
- <div class="mb-6 text-center">
-    <h2 class="text-2xl font-bold text-warmOrange">
-      Learn Coding with Fun Games
-    </h2>
-    <p class="text-skyBlue text-sm mt-1">
-      Play short games to improve logic, problem-solving, and coding skills.
-    </p>
-  </div>
 </main>
 <div class="fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur-md shadow-inner py-3">
   <div class="flex justify-center items-center gap-x-20  text-deepChocolate text-sm">

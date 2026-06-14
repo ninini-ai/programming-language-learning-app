@@ -1,99 +1,132 @@
-import { db } from "./firebase";
-import { doc, getDoc } from "firebase/firestore";
 import { completeQuiz } from "./gamification";
+
 const parts = window.location.pathname.split("/");
+
 const course = parts[2];
 const quizId = parts[3];
-await completeQuiz(course, quizId);
+
 let questions = [];
 let current = 0;
-let answered = false;
+let score = 0;
 
-const questionBox = document.getElementById("questionBox");
-const feedback = document.getElementById("feedback");
-const nextBtn = document.getElementById("nextBtn");
+const questionBox =
+document.getElementById("questionBox");
+
+const feedback =
+document.getElementById("feedback");
+
+const nextBtn =
+document.getElementById("nextBtn");
 
 async function loadQuiz() {
-  const ref = doc(db, "courses", course, "quizzes", quizId);
-  const snap = await getDoc(ref);
 
-  if (!snap.exists()) {
-    document.body.innerHTML = "<h2>Quiz not found</h2>";
-    return;
-  }
+  const res = await fetch(
+    `/quiz-data/${course}/${quizId}`
+  );
 
-  const data = snap.data();
+  const data = await res.json();
 
-  document.getElementById("quizTitle").textContent = data.title;
+  document.getElementById("quizTitle")
+    .textContent = data.title;
 
   questions = data.questions;
+
   renderQuestion();
 }
 
-// SHOW QUESTION
 function renderQuestion() {
-  answered = false;
+
   feedback.innerHTML = "";
   nextBtn.classList.add("hidden");
 
   const q = questions[current];
 
-  let html = `<h2 class="mb-3 font-semibold">${q.question}</h2>`;
+  questionBox.innerHTML = `
+    <h2 class="font-bold mb-3">
+      ${q.question}
+    </h2>
 
-  q.options.forEach((opt, index) => {
-    html += `
-      <button onclick="checkAnswer(${index})"
-        class="block w-full text-left p-3 mb-2 bg-softCream rounded hover:bg-skyBlue">
+    <div class="mb-4 text-sm text-blue-600">
+      Hint: ${q.hint}
+    </div>
+
+    ${q.options.map((opt,index)=>`
+      <button
+        onclick="checkAnswer(${index})"
+        class="block w-full p-3 mb-2 bg-softCream rounded hover:bg-skyBlue">
         ${opt}
       </button>
-    `;
-  });
-
-  questionBox.innerHTML = html;
+    `).join("")}
+  `;
 }
 
-// CHECK ANSWER
-window.checkAnswer = (index) => {
-  if (answered) return;
-
-  answered = true;
+window.checkAnswer = (index)=>{
 
   const q = questions[current];
 
-  if (index === q.correct) {
-    feedback.innerHTML = `<span class="text-green-600">Correct ✅</span>`;
-  } else {
+  if(index === q.correct){
+
+    score++;
+
     feedback.innerHTML = `
-      <span class="text-red-500">Wrong ❌</span><br>
-      Correct: ${q.options[q.correct]}<br>
-      <small>${q.explanation}</small>
+      <div class="text-green-600">
+        Correct ✅
+        <br>
+        ${q.explanation}
+      </div>
+    `;
+  }
+  else{
+
+    feedback.innerHTML = `
+      <div class="text-red-500">
+        Wrong ❌
+        <br>
+        Correct:
+        ${q.options[q.correct]}
+        <br>
+        ${q.explanation}
+      </div>
     `;
   }
 
   nextBtn.classList.remove("hidden");
-};
+}
 
-// NEXT
-nextBtn.onclick = () => {
+nextBtn.onclick = async ()=>{
+
   current++;
 
-  if (current < questions.length) {
+  if(current < questions.length){
+
     renderQuestion();
-  } else {
-import { db, auth } from "./firebase";
-import { doc, updateDoc, arrayUnion, increment } from "firebase/firestore";
-
-const user = auth.currentUser;
-const ref = doc(db, "users", user.uid);
-
-await updateDoc(ref, {
-  [`progress.${course}.quizzesCompleted`]: arrayUnion(quizId),
-  xp: increment(20)
-});
-
-alert("Quiz Completed  +20 XP");
-    window.history.back();
+    return;
   }
-};
+
+  const percent =
+    Math.round(
+      (score/questions.length)*100
+    );
+
+  if(percent >= 60){
+
+    await completeQuiz(
+      course,
+      quizId
+    );
+
+    alert(
+      `Passed! ${percent}% (+20 XP)`
+    );
+  }
+  else{
+
+    alert(
+      `Failed! ${percent}%`
+    );
+  }
+
+  history.back();
+}
 
 loadQuiz();
