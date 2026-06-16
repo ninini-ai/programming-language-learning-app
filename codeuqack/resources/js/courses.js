@@ -8,15 +8,24 @@ onAuthStateChanged(auth, async (user) => {
   if (!user) return location.href = "/auth";
 
   const userSnap = await getDoc(doc(db, "users", user.uid));
-  const courses = userSnap.data().selectedCourses;
+  const courses = userSnap.data().selectedCourses || [];
 
   container.innerHTML = "";
 
   courses.forEach(course => {
     container.innerHTML += `
       <div onclick="goToCourse('${course}')"
-        class="p-5 bg-softCream rounded-xl cursor-pointer hover:bg-skyBlue">
-        <h2 class="text-xl font-bold">${course.toUpperCase()}</h2>
+        class="p-6 bg-white rounded-xl shadow-md cursor-pointer hover:bg-skyBlue transition text-center flex flex-col items-center">
+        
+        <img
+          src="/images/${course.toLowerCase()}.png"
+          alt="${course}"
+          class="w-20 h-20 object-contain mb-4"
+        />
+
+        <h2 class="text-xl font-bold text-gray-800">
+          ${course.toUpperCase()}
+        </h2>
       </div>
     `;
   });

@@ -73,3 +73,6 @@ Route::get('/quiz-data/{course}/{quizId}', function ($course, $quizId) {
         )
     );
 });
+//games 
+Route::get('/games/cpp/bug-hunter',    fn () => view('games.bug-hunter', ['course' => 'cpp']));
+Route::get('/games/python/bug-hunter', fn () => view('games.bug-hunter', ['course' => 'python']));

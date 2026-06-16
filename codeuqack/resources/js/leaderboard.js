@@ -1,67 +1,81 @@
-import { db } from "./firebase";
-import {
- collection,
- getDocs
-} from "firebase/firestore";
+import { auth, db } from "./firebase";
+import { collection, getDocs } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 
-const cppTable =
-document.getElementById("cppBoard");
+const list     = document.getElementById("leaderboardList");
+const tabCpp    = document.getElementById("tabCpp");
+const tabPython = document.getElementById("tabPython");
 
-const pythonTable =
-document.getElementById("pythonBoard");
+const MEDALS = ["🥇", "🥈", "🥉"];
 
-async function load(){
+let allUsers     = [];
+let currentUser  = null;
+let activeCourse = "cpp";
 
- const snap =
- await getDocs(
-   collection(db,"users")
- );
+const ACTIVE_CLS   = "px-6 py-2 rounded-full font-semibold border-2 bg-warmOrange text-white border-warmOrange transition";
+const INACTIVE_CLS = "px-6 py-2 rounded-full font-semibold border-2 bg-white text-deepChocolate border-gray-300 hover:border-warmOrange transition";
 
- let users=[];
+function render(course) {
+  const sorted = [...allUsers].sort(
+    (a, b) => (b.xp?.[course] || 0) - (a.xp?.[course] || 0)
+  );
 
- snap.forEach(doc=>{
+  if (!sorted.length) {
+    list.innerHTML = `<p class="text-center text-gray-400">No data yet.</p>`;
+    return;
+  }
 
-   users.push(doc.data());
+  list.innerHTML = sorted.map((u, i) => {
+    const xp       = u.xp?.[course] || 0;
+    const isMe     = currentUser && u.uid === currentUser.uid;
+    const medal    = MEDALS[i] || `#${i + 1}`;
+    const highlight = isMe ? "bg-yellow-50 border border-yellow-300 rounded-lg" : "";
 
- });
-
- const cpp =
- [...users]
- .sort(
-  (a,b)=>
-  (b.xp?.cpp||0)-
-  (a.xp?.cpp||0)
- );
-
- const python =
- [...users]
- .sort(
-  (a,b)=>
-  (b.xp?.python||0)-
-  (a.xp?.python||0)
- );
-
- cpp.forEach((u,i)=>{
-
-   cppTable.innerHTML += `
-   <tr>
-    <td>${i+1}</td>
-    <td>${u.name}</td>
-    <td>${u.xp?.cpp||0}</td>
-   </tr>
-   `;
- });
-
- python.forEach((u,i)=>{
-
-   pythonTable.innerHTML += `
-   <tr>
-    <td>${i+1}</td>
-    <td>${u.name}</td>
-    <td>${u.xp?.python||0}</td>
-   </tr>
-   `;
- });
+    return `
+      <div class="flex items-center justify-between px-4 py-3 ${highlight}">
+        <div class="flex items-center gap-3">
+          <span class="text-xl w-8 text-center">${medal}</span>
+          <span class="font-semibold text-deepChocolate">${u.name || "Unknown"}${isMe ? " <span class='text-xs text-gray-400'>(you)</span>" : ""}</span>
+        </div>
+        <span class="font-bold text-warmOrange">${xp} XP</span>
+      </div>
+    `;
+  }).join("");
 }
 
-load();
+function setTab(course) {
+  activeCourse       = course;
+  tabCpp.className    = course === "cpp"    ? ACTIVE_CLS : INACTIVE_CLS;
+  tabPython.className = course === "python" ? ACTIVE_CLS : INACTIVE_CLS;
+  render(course);
+}
+
+tabCpp.onclick    = () => setTab("cpp");
+tabPython.onclick = () => setTab("python");
+
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+
+  const snap = await getDocs(collection(db, "users"));
+  allUsers = [];
+
+  snap.forEach(d => {
+    allUsers.push({ uid: d.id, ...d.data() });
+  });
+
+  // If user is logged in, show only their enrolled courses in tabs
+  if (user) {
+    const userSnap = await import("firebase/firestore").then(({ doc, getDoc }) =>
+      getDoc(doc(db, "users", user.uid))
+    );
+    const selected = userSnap.data()?.selectedCourses || ["cpp", "python"];
+
+    tabCpp.style.display    = selected.includes("cpp")    ? "" : "none";
+    tabPython.style.display = selected.includes("python") ? "" : "none";
+
+    // Default to first selected course
+    setTab(selected[0] || "cpp");
+  } else {
+    setTab("cpp");
+  }
+});
