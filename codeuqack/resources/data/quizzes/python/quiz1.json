@@ -1,15 +1,29 @@
 {
-  "lesson1": [
+  "title": "Python Quiz 1",
+  "questions": [
     {
-      "question": "Python is:",
+      "question": "What is pyhon?",
       "options": [
         "Programming Language",
         "Database",
-        "Framework",
-        "Compiler"
+        "Browser",
+        "OS"
       ],
       "correct": 0,
-      "explanation": "Python is a programming language."
+      "hint": "It is used to write software.",
+      "explanation": "C++ is a programming language."
+    },
+    {
+      "question": "Which symbol ends a statement?",
+      "options": [
+        ".",
+        ";",
+        ",",
+        ":"
+      ],
+      "correct": 1,
+      "hint": "Look at every C++ code example.",
+      "explanation": "A semicolon ends a statement."
     }
   ]
 }

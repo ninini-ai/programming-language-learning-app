@@ -9,7 +9,10 @@
 </head>
 
 <body class="bg-softCream min-h-screen p-6">
-
+<a href="{{ url('/dashboard') }}"
+           class="ml-auto px-4 py-2 bg-warmOrange text-white rounded hover:bg-skyBlue transition text-sm">
+            <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+        </a>
   <div class="max-w-2xl mx-auto">
 
     <!-- HEADER -->

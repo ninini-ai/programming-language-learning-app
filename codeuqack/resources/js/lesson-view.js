@@ -1,114 +1,324 @@
-import { db } from "./firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { completeLesson } from "./gamification"; 
+import { db, auth } from "./firebase";
+import {
+  doc, getDoc,
+  collection, getDocs,
+  query, orderBy
+} from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { completeLesson } from "./gamification";
 
-// URL parsing
-const parts = window.location.pathname.split("/");
-const course = parts[2];
+// ── URL parsing ───────────────────────────────────────
+const parts    = window.location.pathname.split("/");
+const course   = parts[2];
 const lessonId = parts[3];
 
-// state
-let slides = [];
-let currentSlide = 0;
+// ── Screens ───────────────────────────────────────────
+const lockedScreen = document.getElementById("lockedScreen");
+const lessonScreen = document.getElementById("lessonScreen");
 
-// elements
-const container = document.getElementById("slideContainer");
-const prevBtn = document.getElementById("prevBtn");
-const nextBtn = document.getElementById("nextBtn");
-const progressText = document.getElementById("progressText");
+// ── Lesson UI ─────────────────────────────────────────
+const lessonTitle   = document.getElementById("lessonTitle");
+const imageBox      = document.getElementById("imageBox");
+const lessonImage   = document.getElementById("lessonImage");
+const videoBox      = document.getElementById("videoBox");
+const lessonVideo   = document.getElementById("lessonVideo");
+const noMediaBox    = document.getElementById("noMediaBox");
+const lessonContent = document.getElementById("lessonContent");
+const prevBtn       = document.getElementById("prevBtn");
+const nextBtn       = document.getElementById("nextBtn");
+const completeBtn   = document.getElementById("completeBtn");
+const progressText  = document.getElementById("progressText");
+const backBtn       = document.getElementById("backBtn");
 
-// LOAD LESSON
-async function loadLesson() {
-  const ref = doc(db, "courses", course, "lessons", lessonId);
-  const snap = await getDoc(ref);
+// ── Q&A UI ────────────────────────────────────────────
+const qaToggleBtn      = document.getElementById("qaToggleBtn");
+const qaPanel          = document.getElementById("qaPanel");
+const qaCloseBtn       = document.getElementById("qaCloseBtn");
+const qaInput          = document.getElementById("qaInput");
+const qaSubmitBtn      = document.getElementById("qaSubmitBtn");
+const qaLoading        = document.getElementById("qaLoading");
+const qaResult         = document.getElementById("qaResult");
+const qaAnswer         = document.getElementById("qaAnswer");
+const qaAnswerText     = document.getElementById("qaAnswerText");
+const qaWarning        = document.getElementById("qaWarning");
+const qaWarningText    = document.getElementById("qaWarningText");
+const qaSuggestionsBox = document.getElementById("qaSuggestionsBox");
+const qaSuggestionsLabel = document.getElementById("qaSuggestionsLabel");
+const qaSuggestions    = document.getElementById("qaSuggestions");
+const qaHistory        = document.getElementById("qaHistory");
 
-  if (!snap.exists()) {
-    document.body.innerHTML = "<h2>Lesson not found</h2>";
-    return;
+// Track current lesson title for context
+let currentLessonTitle = "";
+
+function show(el) { el.classList.remove("hidden"); }
+function hide(el) { el.classList.add("hidden"); }
+
+backBtn.onclick = () => window.location.href = `/lessons/${course}`;
+
+// ══════════════════════════════════════════════════════
+//  Q&A PANEL LOGIC
+// ══════════════════════════════════════════════════════
+
+// Toggle panel open/close
+qaToggleBtn.addEventListener("click", () => {
+  qaPanel.classList.toggle("hidden");
+  if (!qaPanel.classList.contains("hidden")) {
+    qaInput.focus();
   }
+});
 
-  const data = snap.data();
+qaCloseBtn.addEventListener("click", () => {
+  hide(qaPanel);
+});
 
-  document.getElementById("lessonTitle").textContent = data.title;
+// Submit on Enter key
+qaInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") askQuestion();
+});
 
-  if (!data.slides || data.slides.length === 0) {
-    container.innerHTML = "<p>No slides available</p>";
-    return;
-  }
+qaSubmitBtn.addEventListener("click", askQuestion);
 
-  slides = data.slides;
-  renderSlide();
-}
+async function askQuestion() {
+  const question = qaInput.value.trim();
+  if (!question) return;
 
-// RENDER SLIDE
-function renderSlide() {
-  const slide = slides[currentSlide];
+  // Clear previous result
+  hide(qaResult);
+  hide(qaAnswer);
+  hide(qaWarning);
+  hide(qaSuggestionsBox);
+  qaHistory; // keep history
+  show(qaLoading);
 
-  let html = `<h2 class="text-xl font-bold mb-3 text-deepChocolate">${slide.title}</h2>`;
+  qaSubmitBtn.disabled = true;
+  qaInput.disabled     = true;
 
-  // TEXT
-  if (slide.type === "text") {
-    html += `<p class="text-gray-700 leading-relaxed">${slide.content}</p>`;
-  }
-
-  // LIST
-  if (slide.type === "list") {
-    html += `<ul class="list-disc pl-6 text-gray-700 space-y-1">`;
-    slide.items.forEach(item => {
-      html += `<li>${item}</li>`;
+  try {
+    const res = await fetch("/api/qa", {
+      method:  "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content || getCsrfToken(),
+      },
+      body: JSON.stringify({
+        question,
+        course,
+        lessonTitle: currentLessonTitle,
+      }),
     });
-    html += `</ul>`;
+
+    const data = await res.json();
+
+    hide(qaLoading);
+    show(qaResult);
+
+    // ── API/network error ─────────────────────────────
+    if (data.error) {
+      qaAnswerText.textContent = "⚠️ " + data.error;
+      show(qaAnswer);
+      qaSubmitBtn.disabled = false;
+      qaInput.disabled     = false;
+      return;
+    }
+
+    if (data.relevant === true) {
+
+      // ── Show answer ───────────────────────────────
+      qaAnswerText.textContent = data.answer || "No answer returned.";
+      show(qaAnswer);
+      hide(qaWarning);
+
+      if (Array.isArray(data.suggestions) && data.suggestions.length) {
+        qaSuggestionsLabel.textContent = "You might also want to ask:";
+        renderSuggestions(data.suggestions);
+      }
+
+      addToHistory(question, data.answer);
+
+    } else {
+
+      // ── Show warning ──────────────────────────────
+      qaWarningText.textContent = data.warning ||
+        "That question doesn't seem related to this lesson. Try a coding question!";
+      hide(qaAnswer);
+      show(qaWarning);
+
+      if (Array.isArray(data.suggestions) && data.suggestions.length) {
+        qaSuggestionsLabel.textContent = "Try asking one of these instead:";
+        renderSuggestions(data.suggestions);
+      }
+    }
+
+    qaInput.value = "";
+
+  } catch (err) {
+    hide(qaLoading);
+    show(qaResult);
+    qaAnswerText.textContent = "⚠️ Network error. Please check your connection and try again.";
+    show(qaAnswer);
+    console.error("QA error:", err);
   }
 
-  // CODE
-  if (slide.type === "code") {
-    html += `
-      <pre class="bg-black text-green-400 p-4 rounded mt-3 overflow-x-auto text-sm">
-<code>${slide.code}</code>
-      </pre>
+  qaSubmitBtn.disabled = false;
+  qaInput.disabled     = false;
+}
+// Render clickable suggestion chips
+function renderSuggestions(suggestions) {
+  qaSuggestions.innerHTML = "";
+  suggestions.forEach(s => {
+    const btn = document.createElement("button");
+    btn.textContent = s;
+    btn.className = `
+      text-xs px-3 py-2 bg-softCream border border-warmOrange text-warmOrange
+      rounded-full font-semibold hover:bg-warmOrange hover:text-white transition
     `;
-  }
-
-  // VIDEO
-  if (slide.type === "video") {
-    const embed = slide.videoUrl.replace("watch?v=", "embed/");
-    html += `
-      <iframe 
-        src="${embed}"
-        class="w-full h-64 rounded mt-3"
-        frameborder="0"
-        allowfullscreen>
-      </iframe>
-    `;
-  }
-
-  container.innerHTML = html;
-
-  progressText.textContent = `${currentSlide + 1} / ${slides.length}`;
-  prevBtn.style.visibility = currentSlide === 0 ? "hidden" : "visible";
-
-  nextBtn.textContent =
-    currentSlide === slides.length - 1 ? "Finish" : "Next";
+    btn.addEventListener("click", () => {
+      qaInput.value = s;
+      askQuestion();
+    });
+    qaSuggestions.appendChild(btn);
+  });
+  show(qaSuggestionsBox);
 }
 
-// NEXT BUTTON
-nextBtn.onclick = async () => {
-  if (currentSlide < slides.length - 1) {
-    currentSlide++;
-    renderSlide();
-  } else {
-    await completeLesson(course, lessonId);
+// Add answered Q to visible session history
+function addToHistory(question, answer, relevant) {
+  if (!relevant) return; // only log real answers to history
 
-    alert("Lesson Completed  +10 XP");
-    window.history.back();
+  const item = document.createElement("div");
+  item.className = "bg-gray-50 rounded-xl p-3 border border-gray-200";
+  item.innerHTML = `
+    <p class="text-xs text-gray-400 font-bold uppercase mb-1">
+      <i class="fa-solid fa-circle-question text-warmOrange"></i> Your question
+    </p>
+    <p class="text-sm font-semibold text-deepChocolate mb-2">${question}</p>
+    <p class="text-xs text-gray-600 leading-relaxed">${answer}</p>
+  `;
+  qaHistory.prepend(item);
+}
+
+// CSRF token helper (Laravel)
+function getCsrfToken() {
+  const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
+// ══════════════════════════════════════════════════════
+//  LESSON LOAD LOGIC
+// ══════════════════════════════════════════════════════
+
+async function init() {
+  const user = auth.currentUser;
+
+  const userSnap = await getDoc(doc(db, "users", user.uid));
+  const userData = userSnap.data() || {};
+  const completedLessons = userData.progress?.[course]?.lessonsCompleted || [];
+
+  const q = query(
+    collection(db, "courses", course, "lessons"),
+    orderBy("order")
+  );
+  const snapshot = await getDocs(q);
+
+  const lessons = [];
+  snapshot.forEach(d => lessons.push({ id: d.id, ...d.data() }));
+
+  const currentIndex = lessons.findIndex(l => l.id === lessonId);
+
+  if (currentIndex === -1) {
+    document.body.innerHTML = "<h2 class='text-center mt-10'>Lesson not found</h2>";
+    return;
   }
-};
 
+  // Lock check
+  const isFirst    = currentIndex === 0;
+  const prevLesson = lessons[currentIndex - 1];
+  const isUnlocked = isFirst || completedLessons.includes(prevLesson?.id);
 
-prevBtn.onclick = () => {
-  currentSlide--;
-  renderSlide();
-};
+  if (!isUnlocked) {
+    show(lockedScreen);
+    return;
+  }
 
+  show(lessonScreen);
+  renderLesson(lessons[currentIndex]);
 
-loadLesson();
+  // Store lesson title for Q&A context
+  currentLessonTitle = lessons[currentIndex].title || "";
+
+  // Prev / Next setup
+  const hasPrev            = currentIndex > 0;
+  const hasNext            = currentIndex < lessons.length - 1;
+  const isAlreadyCompleted = completedLessons.includes(lessonId);
+
+  progressText.textContent = `Lesson ${currentIndex + 1} / ${lessons.length}`;
+  prevBtn.disabled         = !hasPrev;
+
+  prevBtn.onclick = () => {
+    if (hasPrev)
+      window.location.href = `/lesson/${course}/${lessons[currentIndex - 1].id}`;
+  };
+
+  if (hasNext) {
+    nextBtn.onclick = () => {
+      window.location.href = `/lesson/${course}/${lessons[currentIndex + 1].id}`;
+    };
+    if (isAlreadyCompleted) {
+      show(nextBtn);
+      hide(completeBtn);
+    } else {
+      hide(nextBtn);
+      show(completeBtn);
+    }
+  } else {
+    hide(nextBtn);
+    if (isAlreadyCompleted) {
+      hide(completeBtn);
+    } else {
+      show(completeBtn);
+    }
+  }
+
+  completeBtn.onclick = async () => {
+    await completeLesson(course, lessonId);
+    alert("Lesson Completed! +10 XP");
+    if (hasNext) {
+      hide(completeBtn);
+      show(nextBtn);
+    } else {
+      alert("You finished all lessons in this course! 🎉");
+      window.location.href = `/lessons/${course}`;
+    }
+  };
+}
+
+function renderLesson(lesson) {
+  lessonTitle.textContent  = lesson.title;
+  lessonContent.innerHTML  = lesson.content || "<p>No content available.</p>";
+
+  let hasMedia = false;
+
+  if (lesson.imageUrl) {
+    lessonImage.src = lesson.imageUrl;
+    show(imageBox);
+    hasMedia = true;
+  } else {
+    hide(imageBox);
+  }
+
+  if (lesson.videoUrl) {
+    lessonVideo.src = lesson.videoUrl.replace("watch?v=", "embed/");
+    show(videoBox);
+    hasMedia = true;
+  } else {
+    hide(videoBox);
+  }
+
+  if (!hasMedia) show(noMediaBox);
+  else           hide(noMediaBox);
+}
+
+onAuthStateChanged(auth, (user) => {
+  if (!user) return location.href = "/auth";
+  init();
+});

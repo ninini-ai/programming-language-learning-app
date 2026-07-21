@@ -85,3 +85,6 @@ Route::get('/games/python/code-sorter', fn () => view('games.code-sorter', ['cou
 
 Route::get('/games/cpp/bucket-game',    fn () => view('games.bucket-game', ['course' => 'cpp']));
 Route::get('/games/python/bucket-game', fn () => view('games.bucket-game', ['course' => 'python']));
+
+
+Route::post('/api/qa', [App\Http\Controllers\QAController::class, 'ask']);

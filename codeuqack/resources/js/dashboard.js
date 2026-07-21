@@ -1,5 +1,9 @@
+//dashboard.js
 import { auth, db } from "./firebase";
-import { doc, getDoc } from "firebase/firestore";
+import {
+  doc, getDoc, updateDoc,
+  collection, getDocs, query, orderBy
+} from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 const userNameEl  = document.getElementById("userName");
@@ -7,8 +11,8 @@ const courseTabs  = document.getElementById("courseTabs");
 const coursePanel = document.getElementById("coursePanel");
 
 const COURSE_LABELS = { cpp: "C++", python: "Python" };
-const TOTAL_LESSONS = 10;
-const TOTAL_QUIZZES = 3;
+const ACTIVE_TAB    = "tab-btn px-6 py-2 rounded-full font-semibold border-2 bg-warmOrange text-white border-warmOrange transition";
+const INACTIVE_TAB  = "tab-btn px-6 py-2 rounded-full font-semibold border-2 bg-white text-deepChocolate border-gray-300 hover:border-warmOrange transition";
 
 function getBadge(xp) {
   const imgs = window.APP_IMAGES;
@@ -19,19 +23,15 @@ function getBadge(xp) {
 }
 
 function renderCourse(course, data, userName) {
-  const progress    = data.progress?.[course] || {};
-  const lessons     = (progress.lessonsCompleted || []).length;
-  const quizzes     = (progress.quizzesCompleted || []).length;
-  const xp          = data.xp?.[course] || 0;
-  const level       = data.level?.[course] || 1;
-  const streak      = data.streak?.count || 0;
-  const done        = lessons + quizzes;
-  const total       = TOTAL_LESSONS + TOTAL_QUIZZES;
-  const percent     = Math.floor((done / total) * 100);
-  const badge       = getBadge(xp);
-  const label       = COURSE_LABELS[course] || course.toUpperCase();
-  const nameEncoded = encodeURIComponent(userName);
-  const imgs        = window.APP_IMAGES;
+  const progress  = data.progress?.[course] || {};
+  const lessons   = (progress.lessonsCompleted || []).length;
+  const quizzes   = (progress.quizzesCompleted || []).length;
+  const xp        = data.xp?.[course] || 0;
+  const level     = data.level?.[course] || 1;
+  const streak    = data.streak?.count || 0;
+  const badge     = getBadge(xp);
+  const label     = COURSE_LABELS[course] || course.toUpperCase();
+  const imgs      = window.APP_IMAGES;
 
   let historyItems = [];
   (progress.lessonsCompleted || []).forEach(() =>
@@ -40,7 +40,6 @@ function renderCourse(course, data, userName) {
   (progress.quizzesCompleted || []).forEach(() =>
     historyItems.push(`Completed a ${label} quiz`)
   );
-
   const historyHtml = historyItems.length
     ? historyItems.slice(-5).map(h =>
         `<p class="text-deepChocolate font-semibold">${h}</p>`
@@ -48,7 +47,6 @@ function renderCourse(course, data, userName) {
     : `<p class="text-gray-400">No activity yet</p>`;
 
   return `
-    <!-- STAT CARDS -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
 
       <div class="bg-softCream rounded-2xl p-5 flex flex-col items-center text-center shadow-md">
@@ -71,17 +69,12 @@ function renderCourse(course, data, userName) {
 
       <div class="bg-softCream rounded-2xl p-5 flex flex-col items-center text-center shadow-md">
         <img src="${imgs.percent}" class="w-12 h-12 object-contain mb-2" alt="Progress">
-        <p class="text-2xl font-bold text-deepChocolate">${percent}%</p>
-        <p class="font-semibold text-deepChocolate">Progress</p>
-        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-          <div class="bg-warmOrange h-2 rounded-full" style="width:${percent}%"></div>
-        </div>
-        <p class="text-xs text-gray-500 mt-1">${lessons} lessons · ${quizzes} quizzes</p>
+        <p class="text-2xl font-bold text-deepChocolate">${lessons} lessons</p>
+        <p class="font-semibold text-deepChocolate">${quizzes} quizzes done</p>
       </div>
 
     </div>
 
-    <!-- HISTORY + CERTIFICATE -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
       <div class="bg-softCream rounded-[30px] p-8 shadow-md min-h-[200px]">
@@ -96,10 +89,9 @@ function renderCourse(course, data, userName) {
         <div class="flex flex-col items-center">
           <img src="${imgs.certificate}" class="w-14 h-14 mb-4 object-contain" alt="Certificate">
           <h2 class="text-2xl font-bold text-deepChocolate mb-4">Certificate</h2>
-          <a href="/certificate/${course}?name=${nameEncoded}"
-             class="bg-warmOrange text-white px-6 py-2 rounded-lg hover:bg-skyBlue transition font-semibold">
-            Download ${label} Certificate
-          </a>
+          <div id="certArea-${course}" class="text-center">
+            <i class="fa-solid fa-spinner fa-spin text-warmOrange text-xl"></i>
+          </div>
         </div>
       </div>
 
@@ -107,9 +99,69 @@ function renderCourse(course, data, userName) {
   `;
 }
 
-const ACTIVE_TAB   = "px-6 py-2 rounded-full font-semibold border-2 bg-warmOrange text-white border-warmOrange transition";
-const INACTIVE_TAB = "px-6 py-2 rounded-full font-semibold border-2 bg-white text-deepChocolate border-gray-300 hover:border-warmOrange transition";
+// ── Certificate — async, checks Firestore lesson count ──
+async function buildCertBtn(course, data, userName) {
+  const containerEl = document.getElementById(`certArea-${course}`);
+  if (!containerEl) return;
 
+  const progress     = data.progress?.[course] || {};
+  const lessonsCount = (progress.lessonsCompleted || []).length;
+  const quizzesCount = (progress.quizzesCompleted || []).length;
+
+  // Get total lessons for this course from Firestore
+  const lessonSnap  = await getDocs(
+    query(collection(db, "courses", course, "lessons"), orderBy("order"))
+  );
+  const totalLessons = lessonSnap.size;
+  const totalQuizzes = Math.floor(totalLessons / 3);
+  const allDone      = lessonsCount >= totalLessons && quizzesCount >= totalQuizzes;
+
+  if (!allDone) {
+    const remaining = (totalLessons - lessonsCount) + (totalQuizzes - quizzesCount);
+    containerEl.innerHTML = `
+      <div class="text-center text-gray-500 text-sm">
+        <i class="fa-solid fa-lock text-warmOrange text-2xl mb-2 block"></i>
+        Complete all lessons &amp; quizzes to unlock.<br>
+        <span class="font-semibold text-warmOrange mt-1 block">
+          ${remaining} item(s) remaining
+        </span>
+      </div>
+    `;
+    return;
+  }
+
+  // Determine cert date — saved once, never changes
+  let certDate = data.certificates?.[course];
+
+  if (!certDate) {
+    certDate = new Date().toLocaleDateString("en-GB", {
+      day: "2-digit", month: "short", year: "numeric"
+    });
+    const user = auth.currentUser;
+    if (user) {
+      await updateDoc(doc(db, "users", user.uid), {
+        [`certificates.${course}`]: certDate
+      });
+    }
+  }
+
+  const nameEncoded = encodeURIComponent(userName);
+  const dateEncoded = encodeURIComponent(certDate);
+  const label       = course === "cpp" ? "C++ Programming" : "Python Programming";
+
+  containerEl.innerHTML = `
+    <a href="/certificate/${course}?name=${nameEncoded}&date=${dateEncoded}"
+       target="_blank"
+       class="inline-flex items-center gap-2 bg-warmOrange text-white
+              px-6 py-3 rounded-lg hover:bg-skyBlue transition font-semibold">
+      <i class="fa-solid fa-download"></i>
+      Download ${label} Certificate
+    </a>
+    <p class="text-xs text-gray-400 mt-2 text-center">Earned on: ${certDate}</p>
+  `;
+}
+
+// ── Main ──────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
   if (!user) return location.href = "/auth";
 
@@ -132,17 +184,16 @@ onAuthStateChanged(auth, async (user) => {
   // Render tabs
   courseTabs.classList.remove("hidden");
   courseTabs.innerHTML = courses.map((c, i) => `
-    <button
-      data-course="${c}"
-      class="tab-btn ${i === 0 ? ACTIVE_TAB : INACTIVE_TAB}">
+    <button data-course="${c}" class="tab-btn ${i === 0 ? ACTIVE_TAB : INACTIVE_TAB}">
       ${COURSE_LABELS[c] || c.toUpperCase()}
     </button>
   `).join("");
 
-  // Show first course by default
+  // Show first course
   coursePanel.innerHTML = renderCourse(courses[0], data, userName);
+  buildCertBtn(courses[0], data, userName);
 
-  // Tab click handler
+  // Tab switching
   courseTabs.querySelectorAll(".tab-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const selected = btn.dataset.course;
@@ -152,6 +203,7 @@ onAuthStateChanged(auth, async (user) => {
       });
 
       coursePanel.innerHTML = renderCourse(selected, data, userName);
+      buildCertBtn(selected, data, userName);
     });
   });
 });

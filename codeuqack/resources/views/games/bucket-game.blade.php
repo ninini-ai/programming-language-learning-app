@@ -67,7 +67,11 @@
 </nav>
 
 <main class="max-w-lg mx-auto px-4 pt-20 pb-10">
-
+<div id="levelSelectScreen" class="hidden">
+    <h2 class="text-2xl font-bold text-deepChocolate text-center mb-2">🎮 Bucket Game</h2>
+    <p class="text-center text-gray-500 text-sm mb-6">Complete a lesson to unlock its game level</p>
+    <div id="levelGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-4"></div>
+</div>
     <!-- LOCKED -->
     <div id="lockedScreen" class="hidden text-center bg-softCream rounded-2xl p-10 shadow-md mt-6">
         <i class="fa-solid fa-lock text-6xl text-warmOrange mb-4"></i>
@@ -84,7 +88,14 @@
 
     <!-- GAME -->
     <div id="gameScreen" class="hidden mt-4">
-
+<button id="backToLevels"
+                class="text-sm text-warmOrange font-semibold hover:underline">
+                <i class="fa-solid fa-arrow-left"></i> Levels
+            </button>
+            <div class="bg-softCream rounded-xl px-4 py-2 shadow text-sm font-semibold text-deepChocolate">
+                <i class="fa-solid fa-star text-warmOrange"></i>
+                <span id="levelTitle">Level 1</span>
+            </div>
         <!-- LIVES + Q COUNTER -->
         <div class="bg-softCream rounded-2xl px-5 py-3 shadow mb-3 flex items-center justify-between">
             <div class="flex items-center gap-2">

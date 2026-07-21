@@ -1,3 +1,4 @@
+//gamification.js
 import { db, auth } from "./firebase";
 import {
   doc,
