@@ -1,5 +1,6 @@
+// code-sorter.js
 import { auth, db } from "../firebase";
-import { doc, getDoc, updateDoc, increment } from "firebase/firestore";
+import { doc, getDoc, updateDoc, increment, arrayUnion } from "firebase/firestore";
 import { initLevelSelect } from "./game-levels";
 
 const course = window.COURSE;
@@ -25,6 +26,9 @@ let pIndex    = 0;
 let sessionXP = 0;
 let dragSrc   = null;
 let touchClone = null, touchSrc = null, touchOffX = 0, touchOffY = 0;
+let currentLevel = 1; // NEW — tracks which lesson/level is active so
+                       // completion + XP are recorded against the
+                       // right level instead of being lost entirely.
 
 const ALL_PUZZLES = {
   cpp: [
@@ -142,28 +146,66 @@ nextBtn.addEventListener("click", () => {
   pIndex >= puzzles.length ? endGame() : renderPuzzle();
 });
 
+// ── End Game ─────────────────────────────────────────────
+// FIXED: previously this always awarded XP on every playthrough,
+// with no record of which levels were completed — so a level
+// never showed as "Completed" in the level select, and replaying
+// it kept farming XP indefinitely. Now it checks/records
+// `codeSorterLevelsCompleted`, same pattern as your other games,
+// and only awards XP the first time a level is beaten.
 async function endGame() {
   hide(gameScreen); show(winScreen);
-  finalXP.textContent = sessionXP;
   progressBar.style.width = "100%";
-  if (sessionXP > 0 && auth.currentUser) {
-    try {
-      const ref  = doc(db, "users", auth.currentUser.uid);
-      const snap = await getDoc(ref);
-      const data = snap.data();
-      const newXP = (data.xp?.[course] || 0) + sessionXP;
-      await updateDoc(ref, { [`xp.${course}`]: increment(sessionXP), [`level.${course}`]: Math.floor(newXP/100)+1 });
-    } catch(e) { console.error(e); }
+
+  if (!auth.currentUser) {
+    finalXP.textContent = sessionXP;
+    return;
   }
+
+  try {
+    const ref  = doc(db, "users", auth.currentUser.uid);
+    const snap = await getDoc(ref);
+    const data = snap.data();
+
+    const completed = data.progress?.[course]?.codeSorterLevelsCompleted || [];
+    const firstCompletion = !completed.includes(currentLevel);
+
+    if (firstCompletion) {
+      const currentXP = data.xp?.[course] || 0;
+      const newXP     = currentXP + sessionXP;
+
+      await updateDoc(ref, {
+        [`xp.${course}`]:    increment(sessionXP),
+        [`level.${course}`]: Math.floor(newXP / 100) + 1,
+        [`progress.${course}.codeSorterLevelsCompleted`]: arrayUnion(currentLevel),
+      });
+
+      finalXP.textContent = sessionXP;
+    } else {
+      finalXP.textContent = "0 (already completed)";
+    }
+  } catch (e) {
+    console.error(e);
+    finalXP.textContent = sessionXP;
+  }
+}
+
+// ── Level Select loading / refreshing ─────────────────────
+// Reusable so completed/unlocked status refreshes immediately
+// after finishing a level, instead of showing stale data until
+// a full page reload.
+function loadLevels() {
+  initLevelSelect(course, "Code Sorter", "codeSorterLevelsCompleted", startLevel);
 }
 
 window.backToLevelSelect = () => {
   hide(winScreen); hide(gameScreen);
-  document.getElementById("levelSelectScreen").classList.remove("hidden");
+  loadLevels();
 };
 backToLevels.addEventListener("click", backToLevelSelect);
 
 function startLevel(lessonOrder, lessonTitleText) {
+  currentLevel = lessonOrder;
   pIndex = 0; sessionXP = 0;
   xpDisplay.textContent = 0;
   document.getElementById("levelDisplay").textContent = `Level ${lessonOrder} – ${lessonTitleText}`;
@@ -201,4 +243,4 @@ function onTouchEnd(e) {
   touchSrc = null;
 }
 
-initLevelSelect(course, "Code Sorter", startLevel);
+loadLevels();

@@ -72,12 +72,6 @@
         <!-- Character count -->
         <p id="charCount" class="text-xs text-gray-400 text-right mb-4">0 / 500</p>
 
-        <!-- Sentiment preview (shown after analysis) -->
-        <div id="sentimentBadge" class="hidden mb-4 flex items-center gap-2 text-sm font-semibold">
-            <span class="text-gray-500">Tone detected:</span>
-            <span id="sentimentLabel" class="px-3 py-1 rounded-full text-white text-xs font-bold"></span>
-        </div>
-
         <!-- Submit -->
         <button id="sendFeedback"
             class="w-full py-3 bg-warmOrange text-white rounded-xl font-bold

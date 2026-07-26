@@ -1,5 +1,11 @@
 import { auth, db } from "../firebase";
-import { doc, getDoc, updateDoc, increment } from "firebase/firestore";
+import {
+    doc,
+    getDoc,
+    updateDoc,
+    increment,
+    arrayUnion
+} from "firebase/firestore";
 import { initLevelSelect } from "./game-levels";
 
 const course = window.COURSE;
@@ -14,7 +20,8 @@ const hintText     = document.getElementById("hintText");
 const hintBtn      = document.getElementById("hintBtn");
 const nextBtn      = document.getElementById("nextBtn");
 const xpDisplay    = document.getElementById("xpDisplay");
-const finalXP      = document.getElementById("finalXP");
+const rewardMessage =
+    document.getElementById("rewardMessage");
 const levelTitle   = document.getElementById("levelTitle");
 const qNum         = document.getElementById("qNum");
 const qTotal       = document.getElementById("qTotal");
@@ -238,34 +245,109 @@ hintBtn.addEventListener("click", () => {
 });
 
 async function endGame() {
-  hide(gameScreen);
-  show(winScreen);
-  finalXP.textContent = sessionXP;
 
-  if (sessionXP > 0 && auth.currentUser) {
+    hide(gameScreen);
+    show(winScreen);
+
+    if (!auth.currentUser) return;
+
     try {
-      const ref  = doc(db, "users", auth.currentUser.uid);
-      const snap = await getDoc(ref);
-      const data = snap.data();
-      const newXP    = (data.xp?.[course] || 0) + sessionXP;
-      const newLevel = Math.floor(newXP / 100) + 1;
-      await updateDoc(ref, {
-        [`xp.${course}`]:    increment(sessionXP),
-        [`level.${course}`]: newLevel,
-      });
-    } catch (e) { console.error(e); }
-  }
+
+        const ref = doc(db, "users", auth.currentUser.uid);
+
+        const snap = await getDoc(ref);
+
+        const data = snap.data();
+
+        const completed =
+            data.progress?.[course]?.bugHunterLevelsCompleted || [];
+
+        const firstCompletion =
+            !completed.includes(activeLessonOrder);
+
+        if (firstCompletion) {
+
+            const currentXP =
+                data.xp?.[course] || 0;
+
+            const newXP =
+                currentXP + sessionXP;
+
+            const newLevel =
+                Math.floor(newXP / 100) + 1;
+
+            await updateDoc(ref, {
+
+                [`xp.${course}`]:
+                    increment(sessionXP),
+
+                [`level.${course}`]:
+                    newLevel,
+
+                [`progress.${course}.bugHunterLevelsCompleted`]:
+                    arrayUnion(activeLessonOrder)
+
+            });
+
+            rewardMessage.innerHTML =
+                `+${sessionXP} XP Earned`;
+
+        }
+        else {
+
+            rewardMessage.innerHTML = `
+                <span class="text-green-600">
+                    <i class="fa-solid fa-circle-check"></i>
+                    Level already completed.<br>
+                    No XP awarded.
+                </span>
+            `;
+
+        }
+
+    }
+    catch (e) {
+
+        console.error(e);
+
+    }
+
 }
 
+// ── Level Select loading / refreshing ─────────────────────
+// Reusable so we can call it again after finishing a level or
+// hitting "Back to Levels" / "Play Again", instead of doing a
+// full page reload. This makes newly-completed / newly-unlocked
+// levels show up immediately.
+function loadLevels() {
+  initLevelSelect(
+      course,
+      "Bug Hunter",
+      "bugHunterLevelsCompleted",
+      (lessonOrder, lessonTitle) => {
+        startLevel(lessonOrder, lessonTitle);
+      }
+  );
+}
+
+// Both the "Back to Levels" button and the win screen's
+// "Play Again" button (onclick="restartGame()") need a handler.
+// Previously only backToLevelSelect existed and it did a hard
+// location.reload() — restartGame() didn't exist at all, so
+// "Play Again" would silently fail with a ReferenceError.
 window.backToLevelSelect = () => {
-  hide(winScreen);
-  hide(gameScreen);
-  document.getElementById("levelSelectScreen").classList.remove("hidden");
+    hide(gameScreen);
+    hide(winScreen);
+    loadLevels();
+};
+
+window.restartGame = () => {
+    hide(winScreen);
+    hide(gameScreen);
+    loadLevels();
 };
 
 backToLevels.addEventListener("click", backToLevelSelect);
 
 // ── Init ──────────────────────────────────────────────────
-initLevelSelect(course, "Bug Hunter", (lessonOrder, lessonTitle) => {
-  startLevel(lessonOrder, lessonTitle);
-});
+loadLevels();

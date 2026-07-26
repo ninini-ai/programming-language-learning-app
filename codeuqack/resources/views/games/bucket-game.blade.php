@@ -168,12 +168,10 @@
         <div class="text-6xl mb-3">🏆</div>
         <h2 class="text-2xl font-bold text-deepChocolate mb-2">Buckets Full!</h2>
         <p class="text-gray-500 mb-1">You sorted all the tokens correctly!</p>
-        <p class="text-xl font-bold text-warmOrange mb-6">
-            +<span id="finalXP">0</span> XP Earned
-        </p>
-           <p id="practiceLine" class="hidden text-md font-semibold text-gray-500 mb-6">
-        🔁 Practice round — no XP (already completed)
-    </p>
+      <p id="rewardMessage"
+   class="text-xl font-bold text-warmOrange mb-6">
+</p>
+        
         <div class="flex gap-3 justify-center">
             <button onclick="restartGame()"
                 class="px-6 py-2 bg-warmOrange text-white rounded-lg hover:bg-skyBlue transition font-semibold">

@@ -32,69 +32,120 @@ onAuthStateChanged(auth, async (user) => {
   const userName = userSnap.exists() ? userSnap.data().name : user.email;
 
   const messagesRef = collection(db, "chatRooms", room, "messages");
-  const q = query(messagesRef, orderBy("createdAt"));
 
-  onSnapshot(q, (snapshot) => {
+// Send a system message when user enters
+await addDoc(messagesRef, {
+    type: "system",
+    text: `${userName} entered the chat`,
+    createdAt: serverTimestamp()
+});
+
+const q = query(messagesRef, orderBy("createdAt"));
+
+onSnapshot(q, (snapshot) => {
     messagesDiv.innerHTML = "";
+
     snapshot.forEach(docSnap => {
-      const msg = docSnap.data();
-      const div = document.createElement("div");
-      div.className =
-        "p-2 rounded max-w-[70%] " +
-        (msg.uid === user.uid
-          ? "bg-mintGreen text-white ml-auto"
-          : "bg-softCream text-black mr-auto");
-      div.textContent = `${msg.sender}: ${msg.text}`;
-      messagesDiv.appendChild(div);
+        const msg = docSnap.data();
+
+        // Display system messages in the center
+        if (msg.type === "system") {
+            const system = document.createElement("div");
+            system.className = "text-center text-gray-500 text-sm italic py-2";
+            system.textContent = msg.text;
+
+            messagesDiv.appendChild(system);
+            return;
+        }
+
+        // Normal user messages...
+        const div = document.createElement("div");
+        div.className =
+            "p-2 rounded max-w-[70%] " +
+            (msg.uid === user.uid
+                ? "bg-mintGreen text-white ml-auto"
+                : "bg-softCream text-black mr-auto");
+
+       const sender = document.createElement("div");
+sender.className = "font-semibold text-sm";
+sender.textContent = msg.sender;
+
+const text = document.createElement("div");
+text.className = "mt-1";
+text.textContent = msg.text;
+
+const time = document.createElement("div");
+time.className = "text-[11px] opacity-70 text-right mt-2";
+
+if (msg.createdAt?.toDate) {
+    time.textContent = msg.createdAt.toDate().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
     });
+}
+
+div.appendChild(sender);
+div.appendChild(text);
+div.appendChild(time);
+
+        messagesDiv.appendChild(div);
+    });
+
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  });
+});
 
   sendBtn.onclick = async () => {
     const messageText = input.value.trim();
     if (!messageText) return;
 
-    // block if banned
+    // Block if banned
     if (warnings >= MAX_WARNINGS) {
-      alert("You have been banned from chatting due to repeated violations.");
-      input.disabled = true;
-      sendBtn.disabled = true;
-      return;
+        alert("You have been banned from chatting due to repeated violations.");
+        input.disabled = true;
+        sendBtn.disabled = true;
+        return;
     }
 
+    // Bad words filter
     const bannedWords = ["badword1", "badword2", "badword3"];
+
     const containsBadWord = bannedWords.some(word =>
-      messageText.toLowerCase().includes(word)
+        messageText.toLowerCase().includes(word)
     );
 
     if (containsBadWord) {
-      warnings++;
-      const remaining = MAX_WARNINGS - warnings;
+        warnings++;
+        const remaining = MAX_WARNINGS - warnings;
 
-      if (warnings >= MAX_WARNINGS) {
-        alert("Final warning! You are now banned from this chat.");
-        input.disabled = true;
-        sendBtn.disabled = true;
-      } else {
-        alert(`Warning ${warnings}/${MAX_WARNINGS}: Inappropriate language detected. ${remaining} warning(s) left before you are banned.`);
-      }
-      input.value = "";
-      return;
+        if (warnings >= MAX_WARNINGS) {
+            alert("Final warning! You are now banned from this chat.");
+            input.disabled = true;
+            sendBtn.disabled = true;
+        } else {
+            alert(
+                `Warning ${warnings}/${MAX_WARNINGS}: Inappropriate language detected. ${remaining} warning(s) left.`
+            );
+        }
+
+        input.value = "";
+        return;
     }
 
     try {
-      await addDoc(messagesRef, {
-        text: messageText,
-        sender: userName,
-        uid: user.uid,
-        createdAt: serverTimestamp()
-      });
-      input.value = "";
-    } catch (error) {
-      console.error("Message send failed:", error);
-      alert("Failed to send message. Check console.");
-    }
-  };
 
-  document.getElementById("logoutBtn").onclick = () => signOut(auth).then(() => window.location.href = "/auth");
+        // Save the actual chat message
+        await addDoc(messagesRef, {
+            text: messageText,
+            sender: userName,
+            uid: user.uid,
+            createdAt: serverTimestamp()
+        });
+
+        input.value = "";
+
+    } catch (error) {
+        console.error("Message send failed:", error);
+        alert("Failed to send message.");
+    }
+};
 });

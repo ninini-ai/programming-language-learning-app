@@ -12,15 +12,22 @@
 <body class="bg-softCream min-h-screen flex flex-col">
 
 <header class="fixed top-0 left-0 w-full bg-white shadow z-50">
-  <div class="flex items-center px-4 py-2">
-    <img src="{{ asset('images/mascotCodeQuackapp.png') }}" class="w-12 mr-2">
-    <span class="text-2xl font-bold text-deepChocolate">CodeQuack</span>
+    <div class="flex items-center justify-between px-4 py-2">
 
-    <button id="logoutBtn"
-      class="ml-auto px-4 py-2 bg-warmOrange text-white rounded hover:bg-skyBlue">
-      Logout
-    </button>
-  </div>
+        <!-- Left: Logo & Title -->
+        <div class="flex items-center">
+            <img src="{{ asset('images/mascotCodeQuackapp.png') }}" class="w-12 mr-2">
+            <span class="text-2xl font-bold text-deepChocolate">CodeQuack</span>
+        </div>
+
+        <!-- Right: Back Link -->
+        <a href="{{ asset('chat-select') }}"
+           class="flex items-center gap-2 text-deepChocolate hover:text-skyBlue transition">
+            <i class="fa-solid fa-circle-arrow-left text-md"></i>
+            <span class="font-bold text-md">Go Back to Selection</span>
+        </a>
+
+    </div>
 </header>
 
 <main class="pt-20 p-4 flex flex-col h-screen">

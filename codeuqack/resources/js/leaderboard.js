@@ -1,5 +1,10 @@
 import { auth, db } from "./firebase";
-import { collection, getDocs } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  doc,
+  getDoc
+} from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 const list     = document.getElementById("leaderboardList");
@@ -16,28 +21,51 @@ const ACTIVE_CLS   = "px-6 py-2 rounded-full font-semibold border-2 bg-warmOrang
 const INACTIVE_CLS = "px-6 py-2 rounded-full font-semibold border-2 bg-white text-deepChocolate border-gray-300 hover:border-warmOrange transition";
 
 function render(course) {
-  const sorted = [...allUsers].sort(
+
+  // Only include users enrolled in this course
+  const filtered = allUsers.filter(u =>
+    (u.selectedCourses || []).includes(course)
+  );
+
+  const sorted = filtered.sort(
     (a, b) => (b.xp?.[course] || 0) - (a.xp?.[course] || 0)
   );
 
   if (!sorted.length) {
-    list.innerHTML = `<p class="text-center text-gray-400">No data yet.</p>`;
+    list.innerHTML = `
+      <p class="text-center text-gray-400 py-8">
+        No users enrolled in this course yet.
+      </p>
+    `;
     return;
   }
 
   list.innerHTML = sorted.map((u, i) => {
-    const xp       = u.xp?.[course] || 0;
-    const isMe     = currentUser && u.uid === currentUser.uid;
-    const medal    = MEDALS[i] || `#${i + 1}`;
-    const highlight = isMe ? "bg-yellow-50 border border-yellow-300 rounded-lg" : "";
+
+    const xp = u.xp?.[course] || 0;
+    const isMe = currentUser && u.uid === currentUser.uid;
+
+    const medal = MEDALS[i] || `#${i + 1}`;
+
+    const highlight = isMe
+      ? "bg-yellow-50 border border-yellow-300 rounded-lg"
+      : "";
 
     return `
       <div class="flex items-center justify-between px-4 py-3 ${highlight}">
         <div class="flex items-center gap-3">
           <span class="text-xl w-8 text-center">${medal}</span>
-          <span class="font-semibold text-deepChocolate">${u.name || "Unknown"}${isMe ? " <span class='text-xs text-gray-400'>(you)</span>" : ""}</span>
+
+          <span class="font-semibold text-deepChocolate">
+            ${u.name || "Unknown"}
+            ${isMe ? "<span class='text-xs text-gray-500'>(You)</span>" : ""}
+          </span>
+
         </div>
-        <span class="font-bold text-warmOrange">${xp} XP</span>
+
+        <span class="font-bold text-warmOrange">
+          ${xp} XP
+        </span>
       </div>
     `;
   }).join("");
@@ -65,16 +93,25 @@ onAuthStateChanged(auth, async (user) => {
 
   // If user is logged in, show only their enrolled courses in tabs
   if (user) {
-    const userSnap = await import("firebase/firestore").then(({ doc, getDoc }) =>
-      getDoc(doc(db, "users", user.uid))
-    );
-    const selected = userSnap.data()?.selectedCourses || ["cpp", "python"];
+   const userSnap = await getDoc(doc(db, "users", user.uid));
 
-    tabCpp.style.display    = selected.includes("cpp")    ? "" : "none";
-    tabPython.style.display = selected.includes("python") ? "" : "none";
+const selected = userSnap.data()?.selectedCourses || [];
 
-    // Default to first selected course
-    setTab(selected[0] || "cpp");
+tabCpp.style.display = selected.includes("cpp") ? "" : "none";
+tabPython.style.display = selected.includes("python") ? "" : "none";
+
+// Default to the first selected course
+if (selected.includes("cpp")) {
+    setTab("cpp");
+} else if (selected.includes("python")) {
+    setTab("python");
+} else {
+    list.innerHTML = `
+        <p class="text-center text-gray-500 py-8">
+            You are not enrolled in any course.
+        </p>
+    `;
+}
   } else {
     setTab("cpp");
   }

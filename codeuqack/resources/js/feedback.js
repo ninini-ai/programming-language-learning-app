@@ -3,169 +3,117 @@ import { onAuthStateChanged } from "firebase/auth";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 // ── UI ────────────────────────────────────────────────
-const sendBtn        = document.getElementById("sendFeedback");
-const statusEl       = document.getElementById("status");
-const messageEl      = document.getElementById("message");
-const charCountEl    = document.getElementById("charCount");
-const sentimentBadge = document.getElementById("sentimentBadge");
-const sentimentLabel = document.getElementById("sentimentLabel");
-const typeBtns       = document.querySelectorAll(".type-btn");
+const sendBtn     = document.getElementById("sendFeedback");
+const statusEl    = document.getElementById("status");
+const messageEl   = document.getElementById("message");
+const charCountEl = document.getElementById("charCount");
+const typeBtns    = document.querySelectorAll(".type-btn");
 
 // ── State ─────────────────────────────────────────────
-let currentUser  = null;
+let currentUser = null;
 let selectedType = "bug";
 
 // ── Auth ──────────────────────────────────────────────
 onAuthStateChanged(auth, (user) => {
-  currentUser = user;
+    currentUser = user;
 });
 
 // ── Type selector ─────────────────────────────────────
 typeBtns.forEach(btn => {
-  btn.addEventListener("click", () => {
-    selectedType = btn.dataset.type;
-    typeBtns.forEach(b => {
-      b.className = "type-btn py-2 px-3 rounded-xl border-2 text-sm font-semibold transition border-gray-200 bg-white text-deepChocolate hover:border-warmOrange";
+    btn.addEventListener("click", () => {
+        selectedType = btn.dataset.type;
+
+        typeBtns.forEach(b => {
+            b.className =
+                "type-btn py-2 px-3 rounded-xl border-2 text-sm font-semibold transition border-gray-200 bg-white text-deepChocolate hover:border-warmOrange";
+        });
+
+        btn.className =
+            "type-btn active-type py-2 px-3 rounded-xl border-2 text-sm font-semibold transition border-warmOrange bg-warmOrange text-white";
     });
-    btn.className = "type-btn active-type py-2 px-3 rounded-xl border-2 text-sm font-semibold transition border-warmOrange bg-warmOrange text-white";
-  });
 });
 
-// ── Character counter ─────────────────────────────────
+// ── Character Counter ─────────────────────────────────
 messageEl.addEventListener("input", () => {
-  const len = messageEl.value.length;
-  charCountEl.textContent = `${len} / 500`;
-  if (len > 500) {
-    charCountEl.classList.add("text-red-500");
-    messageEl.value = messageEl.value.slice(0, 500);
-  } else {
-    charCountEl.classList.remove("text-red-500");
-  }
-});
-
-// ── Sentiment Analysis via HuggingFace ────────────────
-// Uses the inference API directly — free, no key needed for this model
-async function getSentiment(text) {
-  try {
-    const res = await fetch(
-      "https://api-inference.huggingface.co/models/distilbert/distilbert-base-uncased-finetuned-sst-2-english",
-      {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ inputs: text }),
-      }
-    );
-
-    if (!res.ok) {
-      console.warn("HuggingFace status:", res.status);
-      return "neutral";
+    if (messageEl.value.length > 500) {
+        messageEl.value = messageEl.value.slice(0, 500);
     }
 
-    const result = await res.json();
-    console.log("HuggingFace raw result:", result);
+    charCountEl.textContent = `${messageEl.value.length} / 500`;
 
-    // Response is [[{label, score}, {label, score}]]
-    // Pick the label with the highest score
-    const scores = result?.[0];
-    if (!Array.isArray(scores) || !scores.length) return "neutral";
+    if (messageEl.value.length >= 500) {
+        charCountEl.classList.add("text-red-500");
+    } else {
+        charCountEl.classList.remove("text-red-500");
+    }
+});
 
-    const top = scores.reduce((a, b) => (a.score > b.score ? a : b));
-    const label = (top.label || "").toUpperCase();
+// ── Status Message ────────────────────────────────────
+function showStatus(message, success = true) {
+    statusEl.textContent = message;
 
-    if (label === "POSITIVE") return "positive";
-    if (label === "NEGATIVE") return "negative";
-    return "neutral";
+    statusEl.className = `mt-4 p-4 rounded-xl text-center text-sm font-semibold ${
+        success
+            ? "bg-green-100 text-green-700 border border-green-200"
+            : "bg-red-100 text-red-600 border border-red-200"
+    }`;
 
-  } catch (err) {
-    console.error("Sentiment error:", err);
-    return "neutral";
-  }
+    statusEl.classList.remove("hidden");
 }
 
-// ── Show sentiment badge ──────────────────────────────
-function showSentiment(sentiment) {
-  const config = {
-    positive: { color: "bg-green-500",  emoji: "😊 Positive" },
-    negative: { color: "bg-red-500",    emoji: "😞 Negative" },
-    neutral:  { color: "bg-gray-400",   emoji: "😐 Neutral"  },
-  };
-
-  const s = config[sentiment] || config.neutral;
-  sentimentLabel.textContent = s.emoji;
-  sentimentLabel.className   = `px-3 py-1 rounded-full text-white text-xs font-bold ${s.color}`;
-  sentimentBadge.classList.remove("hidden");
-}
-
-// ── Show status message ───────────────────────────────
-function showStatus(msg, success = true) {
-  statusEl.textContent = msg;
-  statusEl.className   = `mt-4 p-4 rounded-xl text-center text-sm font-semibold
-    ${success
-      ? "bg-green-100 text-green-700 border border-green-200"
-      : "bg-red-100 text-red-600 border border-red-200"}`;
-  statusEl.classList.remove("hidden");
-}
-
-// ── Submit ────────────────────────────────────────────
+// ── Submit Feedback ───────────────────────────────────
 sendBtn.addEventListener("click", async () => {
-  statusEl.classList.add("hidden");
-  sentimentBadge.classList.add("hidden");
 
-  // Guard: must be logged in
-  if (!currentUser) {
-    showStatus("Please log in first!", false);
-    return;
-  }
+    statusEl.classList.add("hidden");
 
-  const message = messageEl.value.trim();
+    if (!currentUser) {
+        showStatus("Please log in first!", false);
+        return;
+    }
 
-  // Guard: empty message
-  if (!message) {
-    showStatus("Please write your feedback before submitting.", false);
-    messageEl.focus();
-    return;
-  }
+    const message = messageEl.value.trim();
 
-  // Guard: too short
-  if (message.length < 10) {
-    showStatus("Your feedback is too short. Please add more detail.", false);
-    messageEl.focus();
-    return;
-  }
+    if (!message) {
+        showStatus("Please enter your feedback.", false);
+        messageEl.focus();
+        return;
+    }
 
-  // Loading state
-  sendBtn.disabled      = true;
-  sendBtn.innerHTML     = `<i class="fa-solid fa-spinner fa-spin"></i> Analysing & Submitting…`;
+    if (message.length < 10) {
+        showStatus("Please provide a little more detail.", false);
+        messageEl.focus();
+        return;
+    }
 
-  try {
-    // 1. Analyse sentiment
-    const sentiment = await getSentiment(message);
-    console.log("Final sentiment:", sentiment);
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = `
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        Submitting...
+    `;
 
-    // 2. Show badge before saving
-    showSentiment(sentiment);
+    try {
 
-    // 3. Save to Firestore
-    await addDoc(collection(db, "feedback"), {
-      uid:       currentUser.uid,
-      email:     currentUser.email,
-      type:      selectedType,
-      message,
-      sentiment,
-      createdAt: serverTimestamp(),
-    });
+        await addDoc(collection(db, "feedback"), {
+            uid: currentUser.uid,
+            email: currentUser.email,
+            type: selectedType,
+            message: message,
+            createdAt: serverTimestamp()
+        });
 
-    // 4. Success
-    showStatus("✅ Feedback submitted! Thank you for helping us improve.", true);
-    messageEl.value      = "";
-    charCountEl.textContent = "0 / 500";
+        showStatus("✅ Thank you! Your feedback has been submitted.");
 
-  } catch (err) {
-    console.error("Submission error:", err);
-    showStatus("Something went wrong: " + err.message, false);
-  }
+        messageEl.value = "";
+        charCountEl.textContent = "0 / 500";
 
-  // Reset button
-  sendBtn.disabled  = false;
-  sendBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Submit Feedback`;
+    } catch (error) {
+        console.error(error);
+        showStatus("Failed to submit feedback. Please try again.", false);
+    }
+
+    sendBtn.disabled = false;
+    sendBtn.innerHTML = `
+        <i class="fa-solid fa-paper-plane"></i>
+        Submit Feedback
+    `;
 });

@@ -1,5 +1,6 @@
+// code-maze.js
 import { auth, db } from "../firebase";
-import { doc, getDoc, updateDoc, increment } from "firebase/firestore";
+import { doc, getDoc, updateDoc, increment, arrayUnion } from "firebase/firestore";
 import { initLevelSelect } from "./game-levels";
 
 const course = window.COURSE;
@@ -29,13 +30,16 @@ let qIndex    = 0;
 let answered  = false;
 let questions = [];
 let playerPos = { r: 0, c: 0 };
+let currentLevel = 1; // NEW — tracks which lesson/level is active so
+                       // completion + XP are recorded against the
+                       // right level instead of being lost entirely.
 
 const MAZE = [
   [0,0,1,0,0,1,0],
   [1,0,1,0,1,0,0],
   [1,0,0,0,1,1,0],
   [1,1,1,0,0,0,0],
-  [0,0,0,0,1,1,0],
+  [0,0,0,1,1,1,0],
   [0,1,1,0,0,1,0],
   [0,0,0,0,0,0,0],
 ];
@@ -169,28 +173,57 @@ nextBtn.addEventListener("click", () => {
   qIndex >= questions.length ? endGame() : (renderQuestion(), renderMaze());
 });
 
+// ── End Game ─────────────────────────────────────────────
+
 async function endGame() {
   hide(gameScreen);
   show(winScreen);
-  finalXP.textContent = sessionXP;
-  if (sessionXP > 0 && auth.currentUser) {
-    try {
-      const ref  = doc(db, "users", auth.currentUser.uid);
-      const snap = await getDoc(ref);
-      const data = snap.data();
-      const newXP = (data.xp?.[course] || 0) + sessionXP;
+
+  if (!auth.currentUser) {
+    finalXP.textContent = sessionXP;
+    return;
+  }
+
+  try {
+    const ref  = doc(db, "users", auth.currentUser.uid);
+    const snap = await getDoc(ref);
+    const data = snap.data();
+
+    const completed = data.progress?.[course]?.codeMazeLevelsCompleted || [];
+    const firstCompletion = !completed.includes(currentLevel);
+
+    if (firstCompletion) {
+      const currentXP = data.xp?.[course] || 0;
+      const newXP     = currentXP + sessionXP;
+
       await updateDoc(ref, {
         [`xp.${course}`]:    increment(sessionXP),
         [`level.${course}`]: Math.floor(newXP / 100) + 1,
+        [`progress.${course}.codeMazeLevelsCompleted`]: arrayUnion(currentLevel),
       });
-    } catch(e) { console.error(e); }
+
+      finalXP.textContent = sessionXP;
+    } else {
+      finalXP.textContent = "0 (already completed)";
+    }
+  } catch (e) {
+    console.error(e);
+    finalXP.textContent = sessionXP;
   }
+}
+
+// ── Level Select loading / refreshing ─────────────────────
+// Reusable so completed/unlocked status refreshes immediately
+// after finishing a level, instead of showing stale data until
+// a full page reload.
+function loadLevels() {
+  initLevelSelect(course, "Code Maze", "codeMazeLevelsCompleted", startLevel);
 }
 
 window.backToLevelSelect = () => {
   hide(winScreen); hide(loseScreen); hide(gameScreen);
   lives = 3;
-  document.getElementById("levelSelectScreen").classList.remove("hidden");
+  loadLevels();
 };
 
 backToLevels.addEventListener("click", backToLevelSelect);
@@ -205,6 +238,7 @@ window.restartGame = () => {
 };
 
 function startLevel(lessonOrder, lessonTitleText) {
+  currentLevel = lessonOrder;
   lives = 3; sessionXP = 0; qIndex = 0;
   playerPos = { ...START };
   xpDisplay.textContent = 0;
@@ -220,4 +254,4 @@ function startLevel(lessonOrder, lessonTitleText) {
   renderLives(); renderMaze(); renderQuestion();
 }
 
-initLevelSelect(course, "Code Maze", startLevel);
+loadLevels();

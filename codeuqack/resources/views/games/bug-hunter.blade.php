@@ -91,9 +91,9 @@
         <div class="text-6xl mb-3">🏆</div>
         <h2 class="text-2xl font-bold text-deepChocolate mb-2">Level Complete!</h2>
         <p class="text-gray-500 mb-1">Great bug hunting!</p>
-        <p class="text-xl font-bold text-warmOrange mb-6">
-            +<span id="finalXP">0</span> XP Earned
-        </p>
+       <p id="rewardMessage"
+   class="text-xl font-bold text-warmOrange mb-6">
+</p>
         <div class="flex gap-3 justify-center">
             <button onclick="backToLevelSelect()"
                 class="px-6 py-2 bg-warmOrange text-white rounded-lg hover:bg-skyBlue transition font-semibold">
