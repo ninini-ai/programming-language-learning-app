@@ -1,3 +1,4 @@
+{{-- games.blade.php --}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -169,30 +170,17 @@
     </div>
 </div>
 
-<!-- TAB SWITCH SCRIPT -->
-<script>
-    const tabCpp     = document.getElementById("tabCpp");
-    const tabPython  = document.getElementById("tabPython");
-    const cppGames   = document.getElementById("cppGames");
-    const pythonGames = document.getElementById("pythonGames");
 
-    const ACTIVE   = "tab-btn px-6 py-2 rounded-full font-semibold border-2 bg-warmOrange text-white border-warmOrange transition";
-    const INACTIVE = "tab-btn px-6 py-2 rounded-full font-semibold border-2 bg-white text-deepChocolate border-gray-300 hover:border-warmOrange transition";
+<script type="module">
+    import { auth } from '/resources/js/firebase.js';
+    import { signOut } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
 
-    tabCpp.addEventListener("click", () => {
-        tabCpp.className    = ACTIVE;
-        tabPython.className = INACTIVE;
-        cppGames.classList.remove("hidden");
-        pythonGames.classList.add("hidden");
-    });
-
-    tabPython.addEventListener("click", () => {
-        tabPython.className = ACTIVE;
-        tabCpp.className    = INACTIVE;
-        pythonGames.classList.remove("hidden");
-        cppGames.classList.add("hidden");
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await signOut(auth);
+        window.location.href = "{{ url('/') }}";
     });
 </script>
-
+@vite(['resources/js/games.js'])
+@vite(['resources/js/logout.js'])
 </body>
 </html>

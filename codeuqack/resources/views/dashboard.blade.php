@@ -12,13 +12,27 @@
 <div class="max-w-5xl mx-auto px-4 py-8">
 
     <!-- MASCOT + WELCOME -->
-    <div class="flex flex-col items-center text-center mb-6">
-        <img src="{{ asset('images/mascotCodeQuackapp.png') }}" class="w-20 h-20 object-contain mb-3">
+<div class="flex flex-col items-center text-center mb-6">
+
+    <img src="{{ asset('images/mascotCodeQuackapp.png') }}"
+         class="w-20 h-20 object-contain mb-3">
+
+    <div class="flex items-center gap-3">
         <h1 class="text-3xl font-bold text-deepChocolate">
             Welcome, <span id="userName">...</span>!
         </h1>
+
+        <!-- Profile Button -->
+        <button id="profileBtn"
+                class="w-10 h-10 rounded-full
+                       bg-warmOrange text-white
+                       flex items-center justify-center
+                       hover:bg-skyBlue transition">
+            <i class="fa-solid fa-user"></i>
+        </button>
     </div>
 
+</div>
     <!-- COURSE TABS -->
     <div id="courseTabs" class="flex justify-center gap-3 mb-8 hidden">
     </div>
@@ -57,6 +71,8 @@
             <i class="fa-solid fa-comment-dots text-xl"></i>
             <span class="hidden lg:inline mt-1 text-xl">Feedback</span>
         </a>
+        
+
     </div>
 </div>
 
@@ -73,7 +89,18 @@
     platinum:    "{{ asset('images/platinum.png') }}",
   };
 </script>
+<script type="module">
+    import { auth } from '/resources/js/firebase.js';
+    import { signOut } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
 
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await signOut(auth);
+        window.location.href = "{{ url('/') }}";
+    });
+
+    
+</script>
+@vite(['resources/js/logout.js'])
 @vite(['resources/js/dashboard.js'])
 </body>
 </html>

@@ -291,7 +291,30 @@ async function init() {
     }
   };
 }
+function getYouTubeEmbedUrl(url) {
+    try {
+        // youtu.be links
+        if (url.includes("youtu.be/")) {
+            const id = url.split("youtu.be/")[1].split("?")[0];
+            return `https://www.youtube.com/embed/${id}`;
+        }
 
+        // youtube.com/watch?v=
+        if (url.includes("watch?v=")) {
+            const id = new URL(url).searchParams.get("v");
+            return `https://www.youtube.com/embed/${id}`;
+        }
+
+        // already embed link
+        if (url.includes("/embed/")) {
+            return url;
+        }
+
+        return url;
+    } catch {
+        return url;
+    }
+}
 function renderLesson(lesson) {
   lessonTitle.textContent  = lesson.title;
   lessonContent.innerHTML  = lesson.content || "<p>No content available.</p>";
@@ -306,11 +329,11 @@ function renderLesson(lesson) {
     hide(imageBox);
   }
 
-  if (lesson.videoUrl) {
-    lessonVideo.src = lesson.videoUrl.replace("watch?v=", "embed/");
+if (lesson.videoUrl) {
+    lessonVideo.src = getYouTubeEmbedUrl(lesson.videoUrl);
     show(videoBox);
     hasMedia = true;
-  } else {
+} else {
     hide(videoBox);
   }
 

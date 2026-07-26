@@ -1,3 +1,4 @@
+{{-- bucket-game.blade.php --}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -170,6 +171,9 @@
         <p class="text-xl font-bold text-warmOrange mb-6">
             +<span id="finalXP">0</span> XP Earned
         </p>
+           <p id="practiceLine" class="hidden text-md font-semibold text-gray-500 mb-6">
+        🔁 Practice round — no XP (already completed)
+    </p>
         <div class="flex gap-3 justify-center">
             <button onclick="restartGame()"
                 class="px-6 py-2 bg-warmOrange text-white rounded-lg hover:bg-skyBlue transition font-semibold">

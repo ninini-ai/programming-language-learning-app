@@ -1,5 +1,6 @@
-//gamification.js
+// gamification.js
 import { db, auth } from "./firebase";
+
 import {
   doc,
   updateDoc,
@@ -9,11 +10,23 @@ import {
   Timestamp
 } from "firebase/firestore";
 
+
+/* =====================================================
+   GET TODAY AT MIDNIGHT
+===================================================== */
+
 function getTodayMidnight() {
   const d = new Date();
+
   d.setHours(0, 0, 0, 0);
+
   return d;
 }
+
+
+/* =====================================================
+   DAILY LOGIN STREAK
+===================================================== */
 
 function calculateStreak(oldStreak) {
 
@@ -22,40 +35,144 @@ function calculateStreak(oldStreak) {
     lastActive: null
   };
 
+  const now = new Date();
+
+  /* ---------------------------------------------
+     FIRST LOGIN
+  --------------------------------------------- */
+
+  if (!streak.lastActive) {
+
+    return {
+      count: 1,
+      lastActive: Timestamp.now()
+    };
+  }
+
+
+  /* ---------------------------------------------
+     GET LAST LOGIN TIME
+  --------------------------------------------- */
+
+  const lastLogin = streak.lastActive.toDate();
+
+  const elapsedMilliseconds =
+    now.getTime() - lastLogin.getTime();
+
+  const elapsedHours =
+    elapsedMilliseconds / (1000 * 60 * 60);
+
+
+  /* ---------------------------------------------
+     SAME DAY LOGIN
+     
+     User already logged in today.
+     Do not increase streak.
+  --------------------------------------------- */
+
   const today = getTodayMidnight();
 
-  if (streak.lastActive) {
+  const lastLoginDay = new Date(lastLogin);
 
-    const last = streak.lastActive.toDate();
-    last.setHours(0, 0, 0, 0);
+  lastLoginDay.setHours(0, 0, 0, 0);
 
-    const diffDays =
-      (today - last) /
-      (1000 * 60 * 60 * 24);
+  if (today.getTime() === lastLoginDay.getTime()) {
 
-    if (diffDays === 1) {
-      streak.count += 1;
-    }
-    else if (diffDays > 1) {
-      streak.count = 1;
-    }
-  }
-  else {
-    streak.count = 1;
+    return {
+      count: streak.count,
+      lastActive: Timestamp.now()
+    };
   }
 
-  streak.lastActive = Timestamp.now();
 
-  return streak;
+  /* ---------------------------------------------
+     NEXT DAY LOGIN
+
+     If the user comes back within 24 hours,
+     continue the streak.
+  --------------------------------------------- */
+
+  if (elapsedHours < 24) {
+
+    return {
+      count: streak.count + 1,
+      lastActive: Timestamp.now()
+    };
+  }
+
+
+  /* ---------------------------------------------
+     IDLE FOR 24 HOURS OR MORE
+
+     Reset streak.
+  --------------------------------------------- */
+
+  return {
+    count: 1,
+    lastActive: Timestamp.now()
+  };
 }
+
+
+/* =====================================================
+   LEVEL CALCULATION
+===================================================== */
 
 function calculateLevel(xp) {
+
   return Math.floor(xp / 100) + 1;
+
 }
 
-/* =========================
+
+/* =====================================================
+   DAILY LOGIN STREAK UPDATE
+===================================================== */
+
+export async function updateDailyLoginStreak() {
+
+  const user = auth.currentUser;
+
+  if (!user) return;
+
+
+  const ref = doc(
+    db,
+    "users",
+    user.uid
+  );
+
+
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) return;
+
+
+  const data = snap.data();
+
+
+  const newStreak =
+    calculateStreak(data.streak);
+
+
+  await updateDoc(ref, {
+
+    streak: newStreak
+
+  });
+
+
+  console.log(
+    "Daily login streak updated:",
+    newStreak.count
+  );
+
+}
+
+
+/* =====================================================
    COMPLETE LESSON
-========================= */
+===================================================== */
 
 export async function completeLesson(course, lessonId) {
 
@@ -63,31 +180,54 @@ export async function completeLesson(course, lessonId) {
 
   if (!user) return;
 
-  const ref = doc(db, "users", user.uid);
 
-  const snap = await getDoc(ref);
+  const ref =
+    doc(db, "users", user.uid);
 
-  const data = snap.data();
+
+  const snap =
+    await getDoc(ref);
+
+
+  const data =
+    snap.data();
+
+
+  /* ---------------------------------------------
+     PREVENT DUPLICATE LESSON XP
+  --------------------------------------------- */
 
   if (
     data.progress?.[course]?.lessonsCompleted?.includes(lessonId)
   ) {
+
     return;
+
   }
 
+
   const xpGain = 10;
+
 
   const currentXP =
     data.xp?.[course] || 0;
 
+
   const newXP =
     currentXP + xpGain;
+
 
   const newLevel =
     calculateLevel(newXP);
 
-  const streak =
-    calculateStreak(data.streak);
+
+  /*
+   * IMPORTANT:
+   * Do NOT update streak here.
+   *
+   * Streak is maintained only by daily login.
+   */
+
 
   await updateDoc(ref, {
 
@@ -98,17 +238,19 @@ export async function completeLesson(course, lessonId) {
       increment(xpGain),
 
     [`level.${course}`]:
-      newLevel,
+      newLevel
 
-    streak
   });
 
+
   console.log("Lesson completed");
+
 }
 
-/* =========================
+
+/* =====================================================
    COMPLETE QUIZ
-========================= */
+===================================================== */
 
 export async function completeQuiz(course, quizId) {
 
@@ -116,31 +258,54 @@ export async function completeQuiz(course, quizId) {
 
   if (!user) return;
 
-  const ref = doc(db, "users", user.uid);
 
-  const snap = await getDoc(ref);
+  const ref =
+    doc(db, "users", user.uid);
 
-  const data = snap.data();
+
+  const snap =
+    await getDoc(ref);
+
+
+  const data =
+    snap.data();
+
+
+  /* ---------------------------------------------
+     PREVENT DUPLICATE QUIZ XP
+  --------------------------------------------- */
 
   if (
     data.progress?.[course]?.quizzesCompleted?.includes(quizId)
   ) {
+
     return;
+
   }
 
+
   const xpGain = 20;
+
 
   const currentXP =
     data.xp?.[course] || 0;
 
+
   const newXP =
     currentXP + xpGain;
+
 
   const newLevel =
     calculateLevel(newXP);
 
-  const streak =
-    calculateStreak(data.streak);
+
+  /*
+   * IMPORTANT:
+   * Do NOT update streak here.
+   *
+   * Streak is maintained only by daily login.
+   */
+
 
   await updateDoc(ref, {
 
@@ -151,10 +316,11 @@ export async function completeQuiz(course, quizId) {
       increment(xpGain),
 
     [`level.${course}`]:
-      newLevel,
+      newLevel
 
-    streak
   });
 
+
   console.log("Quiz completed");
+
 }

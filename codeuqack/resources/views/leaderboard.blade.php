@@ -41,7 +41,37 @@
     </div>
 
   </div>
+<!-- BOTTOM NAV -->
+<div class="fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur-md shadow-inner py-3">
+    <div class="flex justify-center items-center gap-x-16 text-deepChocolate text-sm">
+        <a href="{{ url('/courses') }}" class="flex flex-col items-center hover:text-skyBlue transition">
+            <i class="fa-solid fa-book text-xl"></i>
+            <span class="hidden lg:inline mt-1 text-xl">Courses</span>
+        </a>
+        <a href="{{ url('/leaderboard') }}" class="flex flex-col items-center hover:text-skyBlue transition">
+            <i class="fa-solid fa-trophy text-xl"></i>
+            <span class="hidden lg:inline mt-1 text-xl">Leaderboard</span>
+        </a>
+        <a href="/chat-select" class="flex flex-col items-center hover:text-skyBlue transition">
+            <i class="fa-solid fa-message text-xl"></i>
+            <span class="hidden lg:inline mt-1 text-xl">Chat Rooms</span>
+        </a>
+        <a href="{{ url('/games') }}" class="flex flex-col items-center hover:text-skyBlue transition">
+            <i class="fa-solid fa-gamepad text-xl"></i>
+            <span class="hidden lg:inline mt-1 text-xl">Games</span>
+        </a>
+        <a href="{{ url('/dashboard') }}" class="flex flex-col items-center hover:text-skyBlue transition">
+            <i class="fa-solid fa-user text-xl"></i>
+            <span class="hidden lg:inline mt-1 text-xl">Profile</span>
+        </a>
+        <a href="{{ url('/feedback') }}" class="flex flex-col items-center hover:text-skyBlue transition">
+            <i class="fa-solid fa-comment-dots text-xl"></i>
+            <span class="hidden lg:inline mt-1 text-xl">Feedback</span>
+        </a>
+        
 
+    </div>
+</div>
   @vite(['resources/js/leaderboard.js'])
 </body>
 </html>

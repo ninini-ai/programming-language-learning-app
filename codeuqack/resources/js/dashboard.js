@@ -47,29 +47,29 @@ function renderCourse(course, data, userName) {
     : `<p class="text-gray-400">No activity yet</p>`;
 
   return `
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
 
-      <div class="bg-softCream rounded-2xl p-5 flex flex-col items-center text-center shadow-md">
-        <img src="${imgs.streak}" class="w-12 h-12 object-contain mb-2" alt="Streak">
-        <p class="text-2xl font-bold text-deepChocolate">${streak} days</p>
+      <div class="bg-softCream rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-md min-h-[180px] hover:shadow-lg transition-all duration-300">
+        <img src="${imgs.streak}" class="w-12 h-12 sm:w-14 sm:h-14 object-contain mb-3" alt="Streak">
+        <p class="text-xl sm:text-2xl font-bold text-deepChocolate">${streak} days</p>
         <p class="font-semibold text-deepChocolate">Streak</p>
       </div>
 
-      <div class="bg-softCream rounded-2xl p-5 flex flex-col items-center text-center shadow-md">
+      <div class="bg-softCream rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-md min-h-[180px] hover:shadow-lg transition-all duration-300">
         <img src="${imgs.xp}" class="w-12 h-12 object-contain mb-2" alt="XP">
-        <p class="text-2xl font-bold text-deepChocolate">${xp} XP</p>
+        <p class="text-xl sm:text-2xl font-bold text-deepChocolate">${xp} XP</p>
         <p class="font-semibold text-deepChocolate">Level ${level}</p>
       </div>
 
-      <div class="bg-softCream rounded-2xl p-5 flex flex-col items-center text-center shadow-md">
+      <div class="bg-softCream rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-md min-h-[180px] hover:shadow-lg transition-all duration-300">
         <img src="${badge.img}" class="w-12 h-12 object-contain mb-2" alt="Badge">
-        <p class="text-2xl font-bold text-deepChocolate">${badge.text}</p>
+        <p class="text-xl sm:text-2xl font-bold text-deepChocolate">${badge.text}</p>
         <p class="font-semibold text-deepChocolate">Badge</p>
       </div>
 
-      <div class="bg-softCream rounded-2xl p-5 flex flex-col items-center text-center shadow-md">
+<div class="bg-softCream rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-md min-h-[180px] hover:shadow-lg transition-all duration-300">
         <img src="${imgs.percent}" class="w-12 h-12 object-contain mb-2" alt="Progress">
-        <p class="text-2xl font-bold text-deepChocolate">${lessons} lessons</p>
+        <p class="text-xl sm:text-2xl font-bold text-deepChocolate">${lessons} lessons</p>
         <p class="font-semibold text-deepChocolate">${quizzes} quizzes done</p>
       </div>
 
@@ -207,3 +207,12 @@ onAuthStateChanged(auth, async (user) => {
     });
   });
 });
+
+
+const profileBtn = document.getElementById("profileBtn");
+
+if (profileBtn) {
+    profileBtn.onclick = () => {
+        window.location.href = "/profile";
+    };
+}

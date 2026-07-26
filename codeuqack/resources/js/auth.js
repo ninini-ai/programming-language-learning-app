@@ -1,5 +1,6 @@
 //auth.js
 import { auth, db } from "./firebase";
+import { updateDailyLoginStreak } from "./gamification";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -116,16 +117,18 @@ level:{
     lastActive: null
   },
 
-  progress: {
+progress: {
     cpp: {
       lessonsCompleted: [],
-      quizzesCompleted: []
+      quizzesCompleted: [],
+      games: { bucketGame: [], bugHunter: [], codeMaze: [], codeSorter: [] }
     },
     python: {
       lessonsCompleted: [],
-      quizzesCompleted: []
+      quizzesCompleted: [],
+      games: { bucketGame: [], bugHunter: [], codeMaze: [], codeSorter: [] }
     }
-  }
+}
 });
     window.location.href = "/dashboard";
   } catch (err) {
@@ -136,24 +139,47 @@ level:{
 };
 
 //signin here
+// signin here
 
 emailSignBtn.onclick = async () => {
+
   const email = emailInput();
   const password = passwordInput();
 
-  if (!email || !password) return alert("Fill all fields");
-if (!isValidEmail(email)) return alert("Please enter a valid email address");
-  try {
-    showLoading();
-    await signInWithEmailAndPassword(auth, email, password);
-    window.location.href = "/dashboard";
-  } catch (err) {
-    alert(err.message);
-  } finally {
-    hideLoading();
-  }
-};
+  if (!email || !password)
+    return alert("Fill all fields");
 
+  if (!isValidEmail(email))
+    return alert("Please enter a valid email address");
+
+  try {
+
+    showLoading();
+
+    // Firebase login
+    await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+
+    // Update daily login streak
+    await updateDailyLoginStreak();
+
+    // Go to dashboard
+    window.location.href = "/dashboard";
+
+  } catch (err) {
+
+    alert(err.message);
+
+  } finally {
+
+    hideLoading();
+
+  }
+
+};
 //helpers
 
 function emailInput() {

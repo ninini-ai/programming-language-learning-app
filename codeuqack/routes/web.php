@@ -88,3 +88,9 @@ Route::get('/games/python/bucket-game', fn () => view('games.bucket-game', ['cou
 
 
 Route::post('/api/qa', [App\Http\Controllers\QAController::class, 'ask']);
+
+
+
+Route::get('/profile', function () {
+    return view('profile');
+});
