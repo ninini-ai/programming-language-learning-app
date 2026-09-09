@@ -34,20 +34,19 @@ class QAController extends Controller
             . "{\"relevant\":true,\"answer\":\"your answer\",\"warning\":\"\",\"suggestions\":[\"q1\",\"q2\"]}";
 
         $payload = [
-         'model' => 'meta-llama/llama-4-scout-17b-16e-instruct',
-            'max_tokens' => 400,
-            'messages'   => [
-                [
-                    'role'    => 'system',
-                    'content' => $systemPrompt,
-                ],
-                [
-                    'role'    => 'user',
-                    'content' => $question,
-                ],
-            ],
-        ];
-
+    'model' => 'openai/gpt-oss-120b', 
+    'max_tokens' => 400,   // no long answers
+    'messages'   => [
+        [
+            'role'    => 'system',
+            'content' => $systemPrompt,
+        ],
+        [
+            'role'    => 'user',
+            'content' => $question,
+        ],
+    ],
+];
         try {
             $response = Http::timeout(20)
                 ->withHeaders([
@@ -78,7 +77,10 @@ class QAController extends Controller
             if (!$response->successful()) {
                 return response()->json(['error' => 'AI service returned error ' . $response->status()], 500);
             }
-
+if ($response->status() === 404) {
+    Log::error('Groq 404 — model likely deprecated/renamed: meta-llama/llama-4-scout-17b-16e-instruct');
+    return response()->json(['error' => 'AI model unavailable. Please contact support.'], 500);
+}
             $body = $response->json();
 
             if (!isset($body['choices'][0]['message']['content'])) {

@@ -10,7 +10,7 @@ import {
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
-const course = window.location.pathname.split("/")[2];
+const course = window.location.pathname.split("/")[2];  //current course determinecpp or python
 const list   = document.getElementById("lessonList");
 
 document.getElementById("courseTitle").textContent =
@@ -19,8 +19,8 @@ document.getElementById("courseTitle").textContent =
 onAuthStateChanged(auth, async (user) => {
   if (!user) return location.href = "/auth";
 
-  // Get user's completed lessons and quizzes for this course
-  const userSnap = await getDoc(doc(db, "users", user.uid));
+  // Get users completed lessons and quizzes for this course
+  const userSnap = await getDoc(doc(db, "users", user.uid)); //read data(loggedin)
   const userData = userSnap.data() || {};
 
   const completedLessons =
@@ -35,7 +35,7 @@ onAuthStateChanged(auth, async (user) => {
     orderBy("order")
   );
 
-  const snapshot = await getDocs(q);
+  const snapshot = await getDocs(q);//download lesson docs
 
   const lessons = [];
 
@@ -52,27 +52,7 @@ onAuthStateChanged(auth, async (user) => {
 
   lessons.forEach((lesson, index) => {
     count++;
-
-    /*
-     * LESSON UNLOCK LOGIC
-     *
-     * Lesson 1 = unlocked automatically.
-     *
-     * After every 3 lessons there is a quiz.
-     *
-     * Lesson 4 requires:
-     *   - Lesson 3 completed
-     *   - Quiz 1 completed
-     *
-     * Lesson 7 requires:
-     *   - Lesson 6 completed
-     *   - Quiz 2 completed
-     *
-     * And so on.
-     */
-
-    const isFirst = index === 0;
-
+    const isFirst = index === 0; 
     let isUnlocked = false;
 
     if (isFirst) {
@@ -89,14 +69,9 @@ onAuthStateChanged(auth, async (user) => {
       // If this lesson comes immediately after a quiz
       if (index % 3 === 0) {
 
-        // Example:
-        // index 3 = Lesson 4 → requires Quiz 1
-        // index 6 = Lesson 7 → requires Quiz 2
-        // index 9 = Lesson 10 → requires Quiz 3
-
+        // quiz after 3 lessons
         const quizNum = index / 3;
         const quizId = `quiz${quizNum}`;
-
         const quizCompleted =
           completedQuizzes.includes(quizId);
 
@@ -151,11 +126,6 @@ onAuthStateChanged(auth, async (user) => {
 
       </div>
     `;
-
-    // ═══════════════════════════════════════════════
-    // QUIZ AFTER EVERY 3 LESSONS
-    // ═══════════════════════════════════════════════
-
     if (count % 3 === 0) {
 
       const quizNum = count / 3;

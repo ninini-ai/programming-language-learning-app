@@ -118,7 +118,7 @@
 
     <!-- FAIL SCREEN -->
     <div id="failScreen" class="hidden text-center bg-softCream rounded-2xl p-10 shadow-md">
-        <div class="text-6xl mb-3">😔</div>
+        <div class="text-6xl mb-3"><i class="fa-solid fa-face-frown text-xl"></i></div>
         <h2 class="text-2xl font-bold text-deepChocolate mb-2">Not Quite!</h2>
         <p class="text-gray-500 mb-1">You scored:</p>
         <p class="text-3xl font-bold text-red-400 mb-1">

@@ -48,8 +48,8 @@ switchMode.onclick = () => {
   animateSwitch(() => {
     mode = mode === "signin" ? "signup" : "signin";
 
-    nameField.classList.toggle("hidden", mode === "signin");
-    coursesField.classList.toggle("hidden", mode === "signin");
+    nameField.classList.toggle("hidden", mode === "signin"); //hide namfield in signin
+    coursesField.classList.toggle("hidden", mode === "signin"); //
     emailSignBtn.classList.toggle("hidden", mode === "signup");
     emailSignupBtn.classList.toggle("hidden", mode === "signin");
     forgotSection.classList.toggle("hidden", mode === "signup"); // hide forgoton signup
@@ -138,47 +138,30 @@ progress: {
   }
 };
 
-//signin here
-// signin here
+//signin 
 
 emailSignBtn.onclick = async () => {
-
   const email = emailInput();
   const password = passwordInput();
-
   if (!email || !password)
     return alert("Fill all fields");
-
   if (!isValidEmail(email))
     return alert("Please enter a valid email address");
-
   try {
-
     showLoading();
-
     // Firebase login
     await signInWithEmailAndPassword(
       auth,
       email,
       password
     );
-
-    // Update daily login streak
     await updateDailyLoginStreak();
-
-    // Go to dashboard
     window.location.href = "/dashboard";
-
   } catch (err) {
-
     alert(err.message);
-
   } finally {
-
     hideLoading();
-
   }
-
 };
 //helpers
 

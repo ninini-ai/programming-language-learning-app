@@ -6,21 +6,21 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 import { completeQuiz } from "./gamification";
 
-// ── URL parsing: /quiz/{course}/{quizId} ──────────────
-const parts  = window.location.pathname.split("/");
-const course = parts[2];
-const quizId = parts[3];
+//URL parsing: /quiz/{course}/{quizId} 
+const parts  = window.location.pathname.split("/");  //Splits the current URL into parts
+const course = parts[2];  //Gets the course.
+const quizId = parts[3];   //getquiz id
 
-// quizId is like "quiz1", "quiz2" — extract number
-const quizNum = parseInt(quizId.replace("quiz", ""));
 
-// ── Screens ───────────────────────────────────────────
+const quizNum = parseInt(quizId.replace("quiz", ""));  //remove quiz and converts it into a number.
+
+//Screens from blade
 const lockedScreen = document.getElementById("lockedScreen");
 const quizScreen   = document.getElementById("quizScreen");
 const passScreen   = document.getElementById("passScreen");
 const failScreen   = document.getElementById("failScreen");
-
-// ── UI ────────────────────────────────────────────────
+//Stores references to HTML elements so JavaScript can update them.
+// UI 
 const quizTitle      = document.getElementById("quizTitle");
 const questionText   = document.getElementById("questionText");
 const optionsArea    = document.getElementById("optionsArea");
@@ -38,8 +38,8 @@ const passPct        = document.getElementById("passPct");
 const failPct        = document.getElementById("failPct");
 const nextLessonBtn  = document.getElementById("nextLessonBtn");
 
-// ── State ─────────────────────────────────────────────
-let questions  = [];
+// State 
+let questions  = [];  //show quiz questins
 let current    = 0;
 let score      = 0;
 let answered   = false;
@@ -48,24 +48,24 @@ let allLessons = [];   // ordered lessons from Firestore
 function show(el) { el.classList.remove("hidden"); }
 function hide(el) { el.classList.add("hidden"); }
 
-// ── Init ──────────────────────────────────────────────
+// Init
 onAuthStateChanged(auth, async (user) => {
   if (!user) return location.href = "/auth";
 
-  // 1. Get user progress
+  //  Get user progress
   const userSnap = await getDoc(doc(db, "users", user.uid));
   const userData = userSnap.data() || {};
   const completedLessons = userData.progress?.[course]?.lessonsCompleted || [];
   const completedQuizzes = userData.progress?.[course]?.quizzesCompleted || [];
 
-  // 2. Get all lessons ordered
+  //  Get all lessons ordered
   const snap = await getDocs(
     query(collection(db, "courses", course, "lessons"), orderBy("order"))
   );
   allLessons = [];
   snap.forEach(d => allLessons.push({ id: d.id, ...d.data() }));
 
-  // 3. Lock check:
+  // Lock check:
   // Quiz N requires lessons (N*3 - 2), (N*3 - 1), (N*3) to be completed
   // e.g. quiz1 needs lessons 1,2,3 (indexes 0,1,2)
   const requiredLessons = allLessons.slice(
@@ -87,26 +87,26 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  // 4. Set up "Next Lesson" button — goes to first lesson after this quiz
-  const nextLessonIndex = quizNum * 3; // 0-based index of next lesson
+  // Set up "Next Lesson" button goes to first lesson after this quiz
+  const nextLessonIndex = quizNum * 3; 
   const nextLesson = allLessons[nextLessonIndex];
   if (nextLesson) {
     nextLessonBtn.onclick = () => {
       window.location.href = `/lesson/${course}/${nextLesson.id}`;
     };
   } else {
-    // No more lessons — go back to lesson list
+    // No more lessons .go back to lesson list
     nextLessonBtn.textContent = "Back to Lessons";
     nextLessonBtn.onclick = () => {
       window.location.href = `/lessons/${course}`;
     };
   }
 
-  // 5. Load quiz data
+  // Load quiz data
   await loadQuiz();
 });
 
-// ── Load Quiz from JSON ───────────────────────────────
+//Load Quiz from JSON 
 async function loadQuiz() {
   try {
     const res  = await fetch(`/quiz-data/${course}/${quizId}`);
@@ -137,7 +137,7 @@ async function loadQuiz() {
   }
 }
 
-// ── Render Question ───────────────────────────────────
+// Render Question 
 function renderQuestion() {
   answered = false;
   hide(feedback);
@@ -146,8 +146,8 @@ function renderQuestion() {
 
   const q = questions[current];
 
-  questionText.textContent      = q.question;
-  qCurrent.textContent          = current + 1;
+  questionText.textContent      = q.question;  //curr quest
+  qCurrent.textContent          = current + 1;  //curr number
   scoreDisplay.textContent      = score;
   progressBar.style.width       = `${(current / questions.length) * 100}%`;
 
@@ -158,7 +158,7 @@ function renderQuestion() {
   } else {
     hide(hintBtn);
   }
-
+//Loops through all answer options and creates a button for each one
   optionsArea.innerHTML = q.options.map((opt, i) => `
     <button data-index="${i}"
       class="option-btn w-full text-left px-4 py-3 bg-white border-2 border-gray-200
@@ -173,7 +173,7 @@ function renderQuestion() {
   });
 }
 
-// ── Handle Answer ─────────────────────────────────────
+// Handle Answer 
 function handleAnswer(chosen) {
   if (answered) return;
   answered = true;
@@ -199,7 +199,7 @@ function handleAnswer(chosen) {
   scoreDisplay.textContent = score;
   show(feedback);
 
-  // Last question — show Finish instead of Next
+  // Last question,show Finish instead of Next
   nextBtn.textContent = current === questions.length - 1
     ? "Finish Quiz"
     : "Next";
@@ -210,7 +210,7 @@ function handleAnswer(chosen) {
   show(nextBtn);
 }
 
-// ── Next / Finish ─────────────────────────────────────
+//  Next / Finish 
 nextBtn.addEventListener("click", async () => {
   current++;
 
@@ -219,7 +219,7 @@ nextBtn.addEventListener("click", async () => {
     return;
   }
 
-  // ── Quiz finished — evaluate ───────────────────────
+  // Quiz finished — evaluate 
   await finishQuiz();
 });
 
@@ -243,7 +243,7 @@ async function finishQuiz() {
   }
 }
 
-// ── Retry ─────────────────────────────────────────────
+//Retry 
 window.retryQuiz = () => {
   hide(failScreen);
   current  = 0;
@@ -255,7 +255,7 @@ window.retryQuiz = () => {
   renderQuestion();
 };
 
-// ── Hint toggle ───────────────────────────────────────
+//Hint toggle 
 hintBtn.addEventListener("click", () => {
   hintBox.classList.toggle("hidden");
 });

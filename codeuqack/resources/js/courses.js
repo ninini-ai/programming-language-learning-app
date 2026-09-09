@@ -1,21 +1,21 @@
 import { auth, db } from "./firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";  //read user specific doc
 import { onAuthStateChanged } from "firebase/auth";
 
 const container = document.getElementById("courseList");
 
-onAuthStateChanged(auth, async (user) => {
+onAuthStateChanged(auth, async (user) => { //auth check(loggedin)
   if (!user) return location.href = "/auth";
 
   const userSnap = await getDoc(doc(db, "users", user.uid));
-  const courses = userSnap.data().selectedCourses || [];
+  const courses = userSnap.data().selectedCourses || []; //get selected courses
 
-  container.innerHTML = "";
+  container.innerHTML = ""; // remves loading message
 
-  courses.forEach(course => {
-    container.innerHTML += `
-      <div onclick="goToCourse('${course}')"
-        class="p-6 bg-white rounded-xl shadow-md cursor-pointer hover:bg-skyBlue transition text-center flex flex-col items-center">
+  courses.forEach(course => { //display courses
+    container.innerHTML += `  
+      <div onclick="goToCourse('${course}')" 
+        class="p-6 bg-white rounded-xl shadow-md cursor-pointer hover:bg-skyBlue transition text-center flex flex-col items-center">   
         
         <img
           src="/images/${course.toLowerCase()}.png"

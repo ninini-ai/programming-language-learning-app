@@ -41,10 +41,6 @@ let sessionXP  = 0;
 let userData   = null;
 let currentLevel = 1;
 
-// Each bucket: { id, label, color, accepts: [token strings] }
-// Each question: { level, codeLine, buckets, tokens }
-// tokens: [{ text, bucket: bucketId }]
-
 const BUCKET_STYLES = {
   purple: { border: "#a78bfa", bg: "#f5f3ff", text: "#6d28d9", badge: "#7c3aed" },
   blue:   { border: "#60a5fa", bg: "#eff6ff", text: "#1d4ed8", badge: "#2563eb" },
@@ -52,7 +48,7 @@ const BUCKET_STYLES = {
   orange: { border: "#fb923c", bg: "#fff7ed", text: "#c2410c", badge: "#ea580c" },
 };
 
-// ── All Questions ────────────────────────────────────────
+//All Questions 
 const ALL_QUESTIONS = {
 
   cpp: [
@@ -288,7 +284,7 @@ const ALL_QUESTIONS = {
 
 };
 
-// ── Helpers ──────────────────────────────────────────────
+// Helpers
 function show(el) { el.classList.remove("hidden"); }
 function hide(el) { el.classList.add("hidden"); }
 
@@ -309,14 +305,14 @@ function shuffle(arr) {
   return a;
 }
 
-// ── Render Lives ─────────────────────────────────────────
+// Render Lives 
 function renderLives() {
   livesDisplay.innerHTML = [0, 1, 2].map(i =>
     `<span class="heart ${i >= lives ? "lost" : ""}">❤️</span>`
   ).join("");
 }
 
-// ── Update placed counter ────────────────────────────────
+// Update placed counter 
 function updatePlaced() {
   const q       = questions[qIndex];
   const total   = q.tokens.length;
@@ -324,20 +320,18 @@ function updatePlaced() {
   placedCount.textContent = `${total - inPool} / ${total} placed`;
 }
 
-// ── Render Question ──────────────────────────────────────
+// Render Question
 function renderQuestion() {
   hide(feedback);
   hide(nextBtn);
   show(checkBtn);
   feedback.className = "hidden p-4 rounded-2xl text-center font-semibold mb-4 text-sm";
-
   const q = questions[qIndex];
   codeLineEl.textContent  = q.codeLine;
   qNum.textContent        = qIndex + 1;
   qTotal.textContent      = questions.length;
   progressBar.style.width = `${(qIndex / questions.length) * 100}%`;
-
-  // ── Render Buckets ───────────────────────────────────
+  // Render Buckets 
   bucketsRow.style.gridTemplateColumns =
     q.buckets.length === 2 ? "1fr 1fr" : "1fr 1fr";
   bucketsRow.innerHTML = "";
@@ -375,7 +369,7 @@ function renderQuestion() {
     bucketsRow.appendChild(div);
   });
 
-  // ── Render Token Pool ────────────────────────────────
+  // Render Token Pool 
   tokenPool.innerHTML = "";
   const shuffled = shuffle(q.tokens);
   shuffled.forEach(t => tokenPool.appendChild(makeToken(t.text)));
@@ -386,25 +380,21 @@ function renderQuestion() {
   tokenPool.addEventListener("dragover",  e => e.preventDefault());
   tokenPool.addEventListener("drop",      onDropPool);
 }
-
-// ── Make Token Element ───────────────────────────────────
+// Make Token Element 
 function makeToken(text) {
   const span = document.createElement("span");
   span.className   = "token bg-warmOrange text-white font-mono font-bold text-sm px-4 py-2 rounded-full border-2 border-yellow-700";
   span.textContent = text;
   span.draggable   = true;
   span.dataset.text = text;
-
   span.addEventListener("dragstart", onDragStart);
   span.addEventListener("dragend",   onDragEnd);
   span.addEventListener("touchstart", onTouchStart, { passive: true });
   span.addEventListener("touchmove",  onTouchMove,  { passive: false });
   span.addEventListener("touchend",   onTouchEnd);
-
   return span;
 }
-
-// ── Make Bucket Token (placed, smaller) ─────────────────
+// Make Bucket Token 
 function makeBucketToken(text, color) {
   const st   = BUCKET_STYLES[color];
   const span = document.createElement("span");
@@ -426,21 +416,21 @@ function makeBucketToken(text, color) {
   return span;
 }
 
-// ── Update bucket count badge ────────────────────────────
+// Update bucket count badge
 function updateBucketCount(bucketId) {
   const area  = document.getElementById(`area-${bucketId}`);
   const badge = document.getElementById(`count-${bucketId}`);
   if (area && badge) badge.textContent = area.children.length;
 }
 
-// ── Check Answer ─────────────────────────────────────────
+// Check Answer 
 checkBtn.addEventListener("click", () => {
   const q = questions[qIndex];
 
   // must place all tokens
   if (tokenPool.children.length > 0) {
     feedback.className = "p-4 rounded-2xl text-center font-semibold mb-4 text-sm bg-yellow-100 text-yellow-700";
-    feedback.textContent = "⚠️ Place all tokens into buckets first!";
+    feedback.textContent = "Place all tokens into buckets first!";
     show(feedback);
     return;
   }
@@ -489,7 +479,7 @@ checkBtn.addEventListener("click", () => {
   show(feedback);
 });
 
-// ── Next ─────────────────────────────────────────────────
+//  Next 
 nextBtn.addEventListener("click", () => {
   qIndex++;
   if (qIndex >= questions.length) {
@@ -499,11 +489,6 @@ nextBtn.addEventListener("click", () => {
   }
 });
 
-// ── Start a specific level ────────────────────────────────
-// THIS WAS MISSING — it's what actually loads the right level's
-// questions and resets game state. Without it, currentLevel was
-// always stuck at 1, so every level was checked/rewarded as if
-// it were level 1, and clicking any level card silently failed.
 function startLevel(lessonOrder, lessonTitle) {
   currentLevel = lessonOrder;
   questions    = getQuestions(lessonOrder);
@@ -539,7 +524,7 @@ function startLevel(lessonOrder, lessonTitle) {
   renderQuestion();
 }
 
-// ── End Game ─────────────────────────────────────────────
+// End Game 
 async function endGame() {
 
     hide(gameScreen);
@@ -605,10 +590,6 @@ async function endGame() {
 
 }
 
-// ── Level Select loading / refreshing ─────────────────────
-// Wrapped so we can call it again after finishing a level, so
-// newly-completed / newly-unlocked levels show correctly right
-// away instead of needing a full page reload.
 function loadLevels() {
   initLevelSelect(
       course,
@@ -622,26 +603,22 @@ function loadLevels() {
   });
 }
 
-// ── Restart ──────────────────────────────────────────────
+// Restart
 window.restartGame = () => {
     hide(winScreen);
     hide(loseScreen);
     loadLevels();
 };
-
 window.backToLevelSelect = () => {
     hide(gameScreen);
     hide(winScreen);
     loadLevels();
 };
-
 document
     .getElementById("backToLevels")
     .addEventListener("click", backToLevelSelect);
 
-// ══════════════════════════════════════════════════════
 //  DRAG – Desktop
-// ══════════════════════════════════════════════════════
 let dragSrc = null;
 
 function onDragStart(e) {
@@ -686,10 +663,7 @@ function onDropPool(e) {
   updatePlaced();
   dragSrc = null;
 }
-
-// ══════════════════════════════════════════════════════
-//  DRAG – Touch
-// ══════════════════════════════════════════════════════
+//  DRAG Touch
 let touchClone   = null;
 let touchSrc     = null;
 let touchOffX    = 0;
@@ -754,5 +728,5 @@ function onTouchEnd(e) {
   touchSrc = null;
 }
 
-// ── Kick things off ────────────────────────────────────────
+// Kick things off 
 loadLevels();

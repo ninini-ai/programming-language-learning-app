@@ -20,14 +20,14 @@ let activeCourse = "cpp";
 const ACTIVE_CLS   = "px-6 py-2 rounded-full font-semibold border-2 bg-warmOrange text-white border-warmOrange transition";
 const INACTIVE_CLS = "px-6 py-2 rounded-full font-semibold border-2 bg-white text-deepChocolate border-gray-300 hover:border-warmOrange transition";
 
-function render(course) {
+function render(course) {  // display for slected course
 
   // Only include users enrolled in this course
   const filtered = allUsers.filter(u =>
     (u.selectedCourses || []).includes(course)
   );
 
-  const sorted = filtered.sort(
+  const sorted = filtered.sort(   //sprts according to xp
     (a, b) => (b.xp?.[course] || 0) - (a.xp?.[course] || 0)
   );
 
@@ -44,25 +44,19 @@ function render(course) {
 
     const xp = u.xp?.[course] || 0;
     const isMe = currentUser && u.uid === currentUser.uid;
-
     const medal = MEDALS[i] || `#${i + 1}`;
-
     const highlight = isMe
       ? "bg-yellow-50 border border-yellow-300 rounded-lg"
-      : "";
-
+      : ""; //yellowhighlight if you 
     return `
       <div class="flex items-center justify-between px-4 py-3 ${highlight}">
         <div class="flex items-center gap-3">
           <span class="text-xl w-8 text-center">${medal}</span>
-
           <span class="font-semibold text-deepChocolate">
             ${u.name || "Unknown"}
-            ${isMe ? "<span class='text-xs text-gray-500'>(You)</span>" : ""}
-          </span>
-
+            ${isMe ? "<span class='text-xs text-gray-500'>(You)</span>" : ""}  
+          </span> 
         </div>
-
         <span class="font-bold text-warmOrange">
           ${xp} XP
         </span>
@@ -78,7 +72,7 @@ function setTab(course) {
   render(course);
 }
 
-tabCpp.onclick    = () => setTab("cpp");
+tabCpp.onclick    = () => setTab("cpp");  // show cpp leaderboard
 tabPython.onclick = () => setTab("python");
 
 onAuthStateChanged(auth, async (user) => {

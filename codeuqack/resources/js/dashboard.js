@@ -33,7 +33,7 @@ function renderCourse(course, data, userName) {
   const label     = COURSE_LABELS[course] || course.toUpperCase();
   const imgs      = window.APP_IMAGES;
 
-  let historyItems = [];
+  let historyItems = []; // histpry list
   (progress.lessonsCompleted || []).forEach(() =>
     historyItems.push(`Completed a ${label} lesson`)
   );
@@ -41,7 +41,7 @@ function renderCourse(course, data, userName) {
     historyItems.push(`Completed a ${label} quiz`)
   );
   const historyHtml = historyItems.length
-    ? historyItems.slice(-5).map(h =>
+    ? historyItems.slice(-5).map(h =>  //last 5 history items
         `<p class="text-deepChocolate font-semibold">${h}</p>`
       ).join("")
     : `<p class="text-gray-400">No activity yet</p>`;
@@ -99,7 +99,7 @@ function renderCourse(course, data, userName) {
   `;
 }
 
-// ── Certificate — async, checks Firestore lesson count ──
+// ── Certificate — async, checks Firestore lesson count
 async function buildCertBtn(course, data, userName) {
   const containerEl = document.getElementById(`certArea-${course}`);
   if (!containerEl) return;
@@ -130,7 +130,7 @@ async function buildCertBtn(course, data, userName) {
     return;
   }
 
-  // Determine cert date — saved once, never changes
+  // Determine cert date, saved once, never changes
   let certDate = data.certificates?.[course];
 
   if (!certDate) {
@@ -161,7 +161,7 @@ async function buildCertBtn(course, data, userName) {
   `;
 }
 
-// ── Main ──────────────────────────────────────────────────
+// Main 
 onAuthStateChanged(auth, async (user) => {
   if (!user) return location.href = "/auth";
 
@@ -182,7 +182,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   // Render tabs
-  courseTabs.classList.remove("hidden");
+  courseTabs.classList.remove("hidden");  //buttons
   courseTabs.innerHTML = courses.map((c, i) => `
     <button data-course="${c}" class="tab-btn ${i === 0 ? ACTIVE_TAB : INACTIVE_TAB}">
       ${COURSE_LABELS[c] || c.toUpperCase()}

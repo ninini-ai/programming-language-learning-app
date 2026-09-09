@@ -4,7 +4,6 @@ import { doc, getDoc, updateDoc, increment, arrayUnion } from "firebase/firestor
 import { initLevelSelect } from "./game-levels";
 
 const course = window.COURSE;
-
 const gameScreen   = document.getElementById("gameScreen");
 const winScreen    = document.getElementById("winScreen");
 const loseScreen   = document.getElementById("loseScreen");
@@ -29,50 +28,129 @@ let sessionXP = 0;
 let qIndex    = 0;
 let answered  = false;
 let questions = [];
+let currentLevel = 1;
+
+//  Dynamic maze state 
+let MAZE = [];
+let ROWS = 0;
+let COLS = 0;
+let SOLUTION_PATH = [];
+let GOAL  = { r: 0, c: 0 };
+let START = { r: 0, c: 0 };
 let playerPos = { r: 0, c: 0 };
-let currentLevel = 1; // NEW — tracks which lesson/level is active so
-                       // completion + XP are recorded against the
-                       // right level instead of being lost entirely.
+//make maze diff each time 
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
-const MAZE = [
-  [0,0,1,0,0,1,0],
-  [1,0,1,0,1,0,0],
-  [1,0,0,0,1,1,0],
-  [1,1,1,0,0,0,0],
-  [0,0,0,1,1,1,0],
-  [0,1,1,0,0,1,0],
-  [0,0,0,0,0,0,0],
-];
-const ROWS = MAZE.length;
-const COLS = MAZE[0].length;
-const GOAL  = { r: 6, c: 6 };
-const START = { r: 0, c: 0 };
+function buildMaze(numQuestions) {
+  //how many path cells are needed.
+  const totalCells = numQuestions + 1;
 
-const SOLUTION_PATH = [
-  {r:0,c:0},{r:0,c:1},
-  {r:1,c:1},{r:2,c:1},{r:2,c:2},{r:2,c:3},
-  {r:3,c:3},{r:3,c:4},{r:3,c:5},{r:3,c:6},
-  {r:4,c:6},{r:5,c:6},{r:6,c:6}
-];
+  const side = Math.max(2, Math.ceil(Math.sqrt(totalCells)) + 1);
+  const rows = side;
+  const cols = side;
+
+  const DIRS = [
+    { dr: -1, dc: 0 },
+    { dr: 1,  dc: 0 },
+    { dr: 0,  dc: -1 },
+    { dr: 0,  dc: 1  },
+  ];
+
+  function carve() {
+    const visited = new Set(["0,0"]);
+    const path = [{ r: 0, c: 0 }];
+
+    function step() {
+      if (path.length === totalCells) return true;
+      const current = path[path.length - 1];
+      for (const dir of shuffle(DIRS)) {
+        const nr = current.r + dir.dr;
+        const nc = current.c + dir.dc;
+        const key = `${nr},${nc}`;
+        if (nr < 0 || nr >= rows || nc < 0 || nc >= cols || visited.has(key)) continue;
+        visited.add(key);
+        path.push({ r: nr, c: nc });
+        if (step()) return true;
+        path.pop();
+        visited.delete(key);
+      }
+      return false;
+    }
+
+    return step() ? path : null;
+  }
+
+  let path = null;
+  for (let attempt = 0; attempt < 15 && !path; attempt++) {
+    path = carve();
+  }
+  // Should basically never happen at this grid size, but guard anyway.
+  if (!path) {
+    path = Array.from({ length: totalCells }, (_, i) => ({ r: 0, c: i }));
+  }
+
+  const maze = Array.from({ length: rows }, () => Array(cols).fill(1));
+  path.forEach(p => { maze[p.r][p.c] = 0; });
+
+  return {
+    maze,
+    rows,
+    cols,
+    path,
+    start: path[0],
+    goal: path[path.length - 1],
+  };
+}
 
 const ALL_QUESTIONS = {
   cpp: [
     { lesson:1, question:"What is C++?", options:["Programming Language","Database","Browser","OS"], correct:0, explanation:"C++ is a programming language." },
     { lesson:1, question:"Which symbol ends a C++ statement?", options:[".",";"," ,",":"], correct:1, explanation:"A semicolon `;` ends every statement." },
+    { lesson:1, question:"Which symbol is used to output text in C++?", options:["<<",">>","::","->"], correct:0, explanation:"`<<` is used with `cout` to output text." },
+
     { lesson:2, question:"Which header is needed for cout?", options:["<stdio.h>","<string>","<iostream>","<math.h>"], correct:2, explanation:"`#include <iostream>` enables cout." },
     { lesson:2, question:"What does `int` mean?", options:["Decimal number","Whole number","Text","True/False"], correct:1, explanation:"`int` stores whole numbers." },
+    { lesson:2, question:"Which of these declares a floating point number?", options:["int x;","float x;","string x;","bool x;"], correct:1, explanation:"`float` is used to declare a floating point number." },
+
     { lesson:3, question:"Which loop runs at least once?", options:["for","while","do-while","if"], correct:2, explanation:"A do-while loop always runs at least once." },
+    { lesson:3, question:"What does `i++` do inside a for loop?", options:["Decreases i by 1","Increases i by 1","Resets i to 0","Stops the loop"], correct:1, explanation:"`i++` increases i by 1 each pass." },
+    { lesson:3, question:"Which loop checks its condition first?", options:["do-while","while","Both check first","Neither"], correct:1, explanation:"A `while` loop checks its condition before running." },
+
     { lesson:4, question:"What is the index of the first array element?", options:["1","0","-1","Depends"], correct:1, explanation:"Arrays in C++ are zero-indexed." },
+    { lesson:4, question:"What keyword is used to define a function with no return value?", options:["int","void","null","empty"], correct:1, explanation:"`void` means the function returns nothing." },
+    { lesson:4, question:"What are the values passed into a function called?", options:["Arguments","Statements","Loops","Variables only"], correct:0, explanation:"Values passed into a function are called arguments (or parameters)." },
+
     { lesson:5, question:"What does `cin` do?", options:["Prints output","Takes user input","Defines a class","Loops"], correct:1, explanation:"`cin` reads input from the user." },
+    { lesson:5, question:"How do you access the second element of an array named arr?", options:["arr(1)","arr[1]","arr{1}","arr.1"], correct:1, explanation:"Array elements are accessed using square brackets, e.g. `arr[1]`." },
+    { lesson:5, question:"What happens if you access an index outside an array's bounds?", options:["It wraps around safely","Undefined behavior / possible crash","It returns 0 automatically","It resizes the array"], correct:1, explanation:"Accessing out-of-bounds indexes in C++ leads to undefined behavior." },
   ],
   python: [
     { lesson:1, question:"Python is a:", options:["Programming Language","Database","Framework","Compiler"], correct:0, explanation:"Python is a programming language." },
     { lesson:1, question:"How do you print in Python?", options:["echo()","console.log()","print()","System.out.println()"], correct:2, explanation:"`print()` outputs text." },
+    { lesson:1, question:"Which of these is a valid Python string?", options:['"Hello"',"Hello","(Hello)","[Hello]"], correct:0, explanation:"Strings in Python are wrapped in quotes." },
+
     { lesson:2, question:"Which symbol starts a Python comment?", options:["//","/*","#","--"], correct:2, explanation:"`#` starts a comment." },
     { lesson:2, question:"How do you create a variable?", options:["int x = 5","var x = 5","x = 5","let x = 5"], correct:2, explanation:"Python uses `x = 5`." },
+    { lesson:2, question:"Which operator is used for exponents in Python?", options:["^","**","%%","exp()"], correct:1, explanation:"`**` is the exponent operator in Python." },
+
     { lesson:3, question:"What keyword starts a Python loop?", options:["loop","repeat","for","iterate"], correct:2, explanation:"`for` starts a loop." },
+    { lesson:3, question:"What does `range(3)` produce?", options:["1,2,3","0,1,2","0,1,2,3","1,2"], correct:1, explanation:"`range(3)` produces 0, 1, 2." },
+    { lesson:3, question:"Which keyword stops a loop early?", options:["stop","break","end","exit"], correct:1, explanation:"`break` exits a loop early." },
+
     { lesson:4, question:"How do you define a function?", options:["function greet():","def greet():","fun greet():","greet() =>"], correct:1, explanation:"`def` defines a function." },
+    { lesson:4, question:"What keyword returns a value from a function?", options:["give","return","output","yield only"], correct:1, explanation:"`return` sends a value back from a function." },
+    { lesson:4, question:"What is `name` in `def greet(name):`?", options:["A keyword","A parameter","A return value","A loop variable"], correct:1, explanation:"`name` is a parameter of the function." },
+
     { lesson:5, question:"What does `range(5)` produce?", options:["1 to 5","0 to 5","0 to 4","1 to 4"], correct:2, explanation:"`range(5)` gives 0,1,2,3,4." },
+    { lesson:5, question:"How do you access the first item in a Python list called `nums`?", options:["nums(0)","nums[0]","nums{0}","nums.first()"], correct:1, explanation:"List items are accessed using square brackets, e.g. `nums[0]`." },
+    { lesson:5, question:"What does `len(nums)` return for a list of 3 items?", options:["2","3","4","Error"], correct:1, explanation:"`len()` returns the number of items in the list — 3 here." },
   ]
 };
 
@@ -104,28 +182,30 @@ function renderMaze() {
     }
   }
 }
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
 
 function renderQuestion() {
   answered = false;
   hide(feedback);
   hide(nextBtn);
   const q = questions[qIndex];
-  questionText.textContent = q.question;
+  questionText.textContent = q.question; // textContent is already safe, no change needed here
   qNum.textContent  = qIndex + 1;
   qTotal.textContent = questions.length;
   progressBar.style.width = `${(qIndex / questions.length) * 100}%`;
   stepCount.textContent = qIndex;
   stepTotal.textContent = Math.min(questions.length, SOLUTION_PATH.length - 1);
 
-  const DIRS = ["Up","Down","Left","Right"];
   optionsArea.innerHTML = q.options.map((opt, i) => `
     <button data-index="${i}"
       class="w-full flex items-center gap-3 px-4 py-3 bg-white border-2 border-gray-200
              rounded-xl hover:border-warmOrange hover:bg-orange-50 transition font-semibold">
-      <span class="bg-warmOrange text-white text-xs font-bold px-2 py-1 rounded-md min-w-[48px] text-center">
-        ${DIRS[i % 4]}
-      </span>
-      <span class="text-deepChocolate">${opt}</span>
+      <span class="text-deepChocolate">${escapeHtml(opt)}</span>
     </button>
   `).join("");
 
@@ -133,7 +213,6 @@ function renderQuestion() {
     btn.addEventListener("click", () => handleAnswer(parseInt(btn.dataset.index)));
   });
 }
-
 function handleAnswer(chosen) {
   if (answered) return;
   answered = true;
@@ -173,8 +252,7 @@ nextBtn.addEventListener("click", () => {
   qIndex >= questions.length ? endGame() : (renderQuestion(), renderMaze());
 });
 
-// ── End Game ─────────────────────────────────────────────
-
+// End Game 
 async function endGame() {
   hide(gameScreen);
   show(winScreen);
@@ -212,10 +290,7 @@ async function endGame() {
   }
 }
 
-// ── Level Select loading / refreshing ─────────────────────
-// Reusable so completed/unlocked status refreshes immediately
-// after finishing a level, instead of showing stale data until
-// a full page reload.
+//  Level Select loading / refreshing 
 function loadLevels() {
   initLevelSelect(course, "Code Maze", "codeMazeLevelsCompleted", startLevel);
 }
@@ -240,15 +315,29 @@ window.restartGame = () => {
 function startLevel(lessonOrder, lessonTitleText) {
   currentLevel = lessonOrder;
   lives = 3; sessionXP = 0; qIndex = 0;
-  playerPos = { ...START };
   xpDisplay.textContent = 0;
   levelTitle.textContent = `Level ${lessonOrder} – ${lessonTitleText}`;
-  questions = (ALL_QUESTIONS[course] || []).filter(q => q.lesson === lessonOrder);
+
+  questions = (ALL_QUESTIONS[course] || []).filter(
+    q => Number(q.lesson) === Number(lessonOrder)
+  );
+
   if (!questions.length) {
     alert("No questions yet for this level!");
     backToLevelSelect();
     return;
   }
+
+  // Build a fresh, randomized maze sized to fit this level's question count.
+  const built = buildMaze(questions.length);
+  MAZE          = built.maze;
+  ROWS          = built.rows;
+  COLS          = built.cols;
+  SOLUTION_PATH = built.path;
+  START         = built.start;
+  GOAL          = built.goal;
+  playerPos     = { ...START };
+
   hide(winScreen); hide(loseScreen);
   show(gameScreen);
   renderLives(); renderMaze(); renderQuestion();

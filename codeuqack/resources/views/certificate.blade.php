@@ -5,8 +5,6 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* Let the controller's setPaper('a4','landscape') control page size.
-     Only set margin here — do NOT set size, or it will conflict. */
   @page {
     margin: 0;
   }
@@ -218,7 +216,7 @@
           @if(file_exists(public_path('images/sig1.png')))
             <img src="{{ public_path('images/sig1.png') }}" class="sig-img" alt="Signature 1"><br>
           @else
-            <div class="sig-placeholder">Bailee</div>
+            <div class="sig-placeholder">Naifa Alam</div>
           @endif
           <div class="sig-line"></div>
           <div class="sig-label">Co-Founder</div>
@@ -228,7 +226,7 @@
           @if(file_exists(public_path('images/sig2.png')))
             <img src="{{ public_path('images/sig2.png') }}" class="sig-img" alt="Signature 2"><br>
           @else
-            <div class="sig-placeholder">Carol</div>
+            <div class="sig-placeholder">Muskan Qureshi</div>
           @endif
           <div class="sig-line"></div>
           <div class="sig-label">Co-Founder</div>
